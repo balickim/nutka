@@ -1,0 +1,24 @@
+:root {
+  color: #17231f;
+  background: #f9f5ed;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 320px; margin: 0; }
+button { font: inherit; }
+.app-shell { width: min(960px, calc(100% - 3rem)); margin: 0 auto; padding: 1.5rem 0 5rem; }
+header { display: flex; align-items: center; justify-content: space-between; }
+.brand { color: inherit; font-size: 1.5rem; font-weight: 800; letter-spacing: -.06em; text-decoration: none; }
+.brand span, .eyebrow { color: #e76f51; }
+.status { padding: .45rem .7rem; border-radius: 999px; font-size: .82rem; font-weight: 700; }
+.status-checking { background: #f1e2bd; color: #7f5c16; }
+.status-ready { background: #d9e4d6; color: #2c5948; }
+.status-unavailable { background: #f6d8d1; color: #9a3e2b; }
+.welcome-card { margin-top: 10vh; padding: clamp(2rem, 8vw, 5rem); border-radius: 1.5rem; background: #243e36; color: #fffdf7; }
+.eyebrow { margin: 0 0 1rem; font-size: .75rem; font-weight: 800; letter-spacing: .13em; }
+h1 { max-width: 650px; margin: 0 0 1rem; font-size: clamp(2.8rem, 8vw, 6rem); letter-spacing: -.06em; line-height: .98; }
+.welcome-card > p:not(.eyebrow) { max-width: 520px; color: #cbd8ce; font-size: 1.1rem; line-height: 1.6; }
+button { margin-top: 1.5rem; padding: .8rem 1.1rem; border: 0; border-radius: 999px; background: #f0ba58; color: #17231f; font-weight: 800; cursor: pointer; }
+.api-note { color: #6a746e; font-size: .85rem; text-align: center; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
