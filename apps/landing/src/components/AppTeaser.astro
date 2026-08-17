@@ -1,0 +1,34 @@
+---
+import { site } from "../data/site";
+
+const { app } = site;
+---
+
+<section class="container-x section reveal">
+  <div class="rounded-block bg-apricot/25 p-8 sm:p-12">
+    <div class="flex flex-wrap items-center gap-3">
+      <p class="eyebrow">{app.eyebrow}</p>
+      {
+        !app.available && (
+          <span class="rounded-full bg-ink px-3 py-1 text-xs font-semibold tracking-wide text-cream">
+            {app.badge}
+          </span>
+        )
+      }
+    </div>
+
+    <h2 class="mt-4 max-w-2xl text-[clamp(1.8rem,3.8vw,2.8rem)]">{app.title}</h2>
+    <p class="mt-4 max-w-xl leading-relaxed text-muted">{app.lede}</p>
+
+    <ul class="mt-10 grid gap-6 sm:grid-cols-3">
+      {
+        app.features.map((feature) => (
+          <li>
+            <h3 class="text-lg font-semibold">{feature.name}</h3>
+            <p class="mt-2 leading-relaxed text-muted">{feature.description}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

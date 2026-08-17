@@ -1,0 +1,39 @@
+---
+import type { Photo } from "../data/site";
+
+interface Props {
+  src: Photo;
+  alt: string;
+  /** Opis brakującego zdjęcia, widoczny na placeholderze. */
+  label: string;
+  /** Proporcje docelowego kadru, np. "4 / 5". Placeholder trzyma je co do piksela,
+      więc podmiana na prawdziwe zdjęcie nie przesuwa layoutu. */
+  ratio?: string;
+  symbol?: string;
+  class?: string;
+}
+
+const { src, alt, label, ratio = "4 / 5", symbol = "♪", class: className = "" } = Astro.props;
+---
+
+<figure
+  class:list={["relative m-0 overflow-hidden rounded-block bg-cream-deep", className]}
+  style={`aspect-ratio: ${ratio};`}
+>
+  {
+    src ? (
+      <img src={src} alt={alt} class="h-full w-full object-cover" loading="lazy" decoding="async" />
+    ) : (
+      <div
+        class="flex h-full w-full flex-col items-center justify-center gap-4 rounded-block border-2 border-dashed border-line bg-cream-deep p-6 text-center"
+      >
+        <span class="font-display text-[clamp(4rem,14vw,9rem)] leading-none text-grass/70" aria-hidden="true">
+          {symbol}
+        </span>
+        <span class="rounded-full bg-ink px-4 py-2 text-xs font-semibold tracking-wide text-cream">
+          TODO: {label}
+        </span>
+      </div>
+    )
+  }
+</figure>

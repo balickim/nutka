@@ -1,0 +1,25 @@
+---
+import { site } from "../data/site";
+
+const { pricing } = site;
+---
+
+<section class="container-x section reveal">
+  <div class="grid items-center gap-8 rounded-block border border-line bg-cream-deep/50 p-8 sm:p-12 lg:grid-cols-[1fr_auto]">
+    <div>
+      <p class="eyebrow">{pricing.eyebrow}</p>
+      <h2 class="mt-4 text-[clamp(1.8rem,3.8vw,2.8rem)]">{pricing.title}</h2>
+      <p class="mt-6 flex flex-wrap items-baseline gap-2">
+        <span class="text-sm font-semibold tracking-wide text-muted uppercase">od</span>
+        <span class="font-display text-4xl font-semibold">{pricing.from}</span>
+        <span class="text-muted">{pricing.fromUnit}</span>
+      </p>
+      <p class="mt-4 max-w-md leading-relaxed text-muted">{pricing.teaserNote}</p>
+    </div>
+
+    <a href="/cennik" class="btn btn-accent justify-self-start lg:justify-self-end">
+      {pricing.ctaLabel}
+      <span aria-hidden="true">→</span>
+    </a>
+  </div>
+</section>

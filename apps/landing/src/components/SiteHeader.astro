@@ -1,0 +1,64 @@
+---
+import { site } from "../data/site";
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? "http://127.0.0.1:5173";
+---
+
+<header class="sticky top-0 z-40 border-b border-line/60 bg-cream/85 backdrop-blur-md">
+  <div class="container-x flex items-center justify-between gap-6 py-3">
+    <a href="/" class="flex items-center gap-2 font-display text-lg font-semibold tracking-tight sm:text-xl">
+      {site.teacherName}
+      <!-- Kształt, nie znak tekstowy: zieleń #0bb50e nie przechodzi kontrastu jako tekst. -->
+      <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-grass" aria-hidden="true"></span>
+    </a>
+
+    <nav class="hidden items-center gap-7 md:flex" aria-label="Nawigacja główna">
+      {
+        site.nav.map((item) => (
+          <a href={item.href} class="text-sm font-medium text-muted transition-colors hover:text-ink">
+            {item.label}
+          </a>
+        ))
+      }
+      <a href={appUrl} class="text-sm font-medium text-muted transition-colors hover:text-ink">
+        Zaloguj się
+      </a>
+      <a href="/#kontakt" class="btn btn-primary btn-sm">Umów lekcję</a>
+    </nav>
+
+    <!-- Menu mobilne bez JavaScriptu: natywny details/summary. -->
+    <details class="group relative md:hidden">
+      <summary
+        class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-line"
+        aria-label="Menu"
+      >
+        <span class="sr-only">Menu</span>
+        <span class="flex flex-col gap-[5px]" aria-hidden="true">
+          <span class="block h-[2px] w-5 rounded-full bg-ink"></span>
+          <span class="block h-[2px] w-5 rounded-full bg-ink"></span>
+          <span class="block h-[2px] w-5 rounded-full bg-ink"></span>
+        </span>
+      </summary>
+      <div
+        class="absolute right-0 z-50 mt-3 flex w-60 flex-col gap-1 rounded-card border border-line bg-cream p-3 shadow-lift"
+      >
+        {
+          site.nav.map((item) => (
+            <a href={item.href} class="rounded-full px-4 py-3 font-medium hover:bg-cream-deep">
+              {item.label}
+            </a>
+          ))
+        }
+        <a href={appUrl} class="rounded-full px-4 py-3 font-medium hover:bg-cream-deep">Zaloguj się</a>
+        <a href="/#kontakt" class="btn btn-primary mt-1">Umów lekcję</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<style>
+  /* Safari pokazuje domyślny trójkąt mimo list-style:none. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

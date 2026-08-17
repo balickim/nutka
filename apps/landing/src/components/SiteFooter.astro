@@ -1,0 +1,52 @@
+---
+import { site } from "../data/site";
+
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? "http://127.0.0.1:5173";
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-line">
+  <div class="container-x grid gap-10 py-14 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+    <div>
+      <p class="flex items-center gap-2 font-display text-lg font-semibold">
+        {site.teacherName}
+        <span class="inline-block h-2 w-2 rounded-full bg-grass" aria-hidden="true"></span>
+      </p>
+      <p class="mt-3 max-w-xs leading-relaxed text-muted">{site.footer.tagline}</p>
+    </div>
+
+    <div>
+      <p class="eyebrow">Kontakt</p>
+      <ul class="mt-4 space-y-2 text-muted">
+        <li><a href={site.contact.phoneHref} class="hover:text-ink">{site.contact.phone}</a></li>
+        <li><a href={site.contact.emailHref} class="hover:text-ink">{site.contact.email}</a></li>
+        <li>{site.contact.city}</li>
+      </ul>
+    </div>
+
+    <div>
+      <p class="eyebrow">Strona</p>
+      <ul class="mt-4 space-y-2 text-muted">
+        {site.nav.map((item) => <li><a href={item.href} class="hover:text-ink">{item.label}</a></li>)}
+        <li><a href={appUrl} class="hover:text-ink">Zaloguj się</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-x flex flex-wrap items-center justify-between gap-3 border-t border-line py-6 text-sm text-muted">
+    <p>© {year} {site.teacherName}</p>
+    {
+      site.footer.legalLinks.length > 0 && (
+        <ul class="flex flex-wrap gap-5">
+          {site.footer.legalLinks.map((link) => (
+            <li>
+              <a href={link.href} class="hover:text-ink">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</footer>

@@ -1,0 +1,24 @@
+---
+import { site } from "../data/site";
+
+const { objections } = site;
+---
+
+<section class="bg-ink text-cream">
+  <div class="container-x section reveal">
+    <p class="eyebrow text-cream/70">{objections.eyebrow}</p>
+    <h2 class="mt-4 max-w-3xl text-[clamp(2rem,4.5vw,3.4rem)]">{objections.title}</h2>
+
+    <ul class="mt-12 grid gap-5 md:grid-cols-3">
+      {
+        objections.items.map((item) => (
+          <li class="rounded-card border border-cream/15 bg-cream/5 p-7">
+            <p class="font-display text-2xl leading-snug">{item.claim}</p>
+            <span class="mt-5 mb-5 block h-px w-12 bg-grass" aria-hidden="true" />
+            <p class="leading-relaxed text-cream/80">{item.answer}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
