@@ -1,0 +1,33 @@
+---
+import { site } from "../data/site";
+import Figure from "./Figure.astro";
+
+const { about } = site;
+---
+
+<section id="o-mnie" class="container-x section reveal">
+  <div class="grid items-start gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+    <Figure
+      src={about.portrait}
+      alt={`Portret — ${site.teacherName}`}
+      label="portret Dominiki (kadr pionowy 4:5)"
+      ratio="4 / 5"
+      symbol="♬"
+      class="lg:sticky lg:top-28"
+    />
+
+    <div>
+      <p class="eyebrow">{about.eyebrow}</p>
+      <p class="mt-4 font-display text-2xl font-semibold">{site.teacherName}</p>
+      <h2 class="mt-5 text-[clamp(1.9rem,4vw,3rem)]">{about.title}</h2>
+
+      <div class="mt-8 space-y-5 text-lg leading-relaxed text-muted">
+        {about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+
+      <p class="mt-10 border-l-4 border-grass pl-5 font-display text-xl leading-snug text-ink">
+        Uczę dzieci i dorosłych od lat. Tutaj skupiam się na dorosłych, którzy grają dla siebie.
+      </p>
+    </div>
+  </div>
+</section>

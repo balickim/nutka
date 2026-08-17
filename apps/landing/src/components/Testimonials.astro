@@ -1,0 +1,27 @@
+---
+import { site } from "../data/site";
+
+const { testimonials } = site;
+
+// Sekcja jest gotowa, ale nie renderuje się bez prawdziwych wypowiedzi uczniów.
+// Włączenie: testimonials.enabled = true w src/data/site.ts.
+const visible = testimonials.enabled && testimonials.items.length > 0;
+---
+
+{
+  visible && (
+    <section class="container-x section reveal">
+      <p class="eyebrow">{testimonials.eyebrow}</p>
+      <h2 class="mt-4 max-w-3xl text-[clamp(2rem,4.5vw,3.4rem)]">{testimonials.title}</h2>
+
+      <ul class="mt-12 grid gap-6 md:grid-cols-3">
+        {testimonials.items.map((item) => (
+          <li class="rounded-card border border-line bg-cream-deep/50 p-7">
+            <blockquote class="font-display text-xl leading-snug">„{item.quote}”</blockquote>
+            <p class="mt-5 text-sm font-semibold tracking-wide text-muted">{item.author}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

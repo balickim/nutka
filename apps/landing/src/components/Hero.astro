@@ -1,0 +1,42 @@
+---
+import { site } from "../data/site";
+import Figure from "./Figure.astro";
+
+const { hero, instruments } = site;
+---
+
+<section class="container-x grid items-center gap-10 pt-12 pb-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:pt-20 lg:pb-24">
+  <div>
+    <p class="eyebrow">{hero.eyebrow}</p>
+    <h1 class="mt-5 text-[clamp(2.4rem,6vw,4.4rem)]">
+      {hero.title}<br />
+      <!-- Zieleń pełni tu rolę plamy tła pod ciemnym tekstem, nie koloru pisma. -->
+      <span class="marker">{hero.titleAccent}</span>
+    </h1>
+    <p class="mt-7 max-w-xl text-lg leading-relaxed text-muted">{hero.lede}</p>
+
+    <div class="mt-9 flex flex-wrap items-center gap-3">
+      <a href="#kontakt" class="btn btn-primary">{hero.ctaPrimary}</a>
+      <a href="#jak-zaczac" class="btn btn-ghost">{hero.ctaSecondary}</a>
+    </div>
+
+    <ul class="mt-9 flex flex-wrap gap-2" aria-label="Formy zajęć">
+      {
+        instruments.modes.map((mode) => (
+          <li class="rounded-full border border-line bg-cream-deep/60 px-4 py-2 text-sm font-medium text-muted">
+            {mode}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <Figure
+    src={hero.photo}
+    alt={`${site.teacherName} podczas lekcji`}
+    label="zdjęcie z lekcji (kadr pionowy 4:5)"
+    ratio="4 / 5"
+    symbol="♫"
+    class="max-h-[34rem] shadow-lift"
+  />
+</section>

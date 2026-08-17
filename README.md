@@ -25,6 +25,23 @@ Inside Conductor, `CONDUCTOR_PORT` is used for the landing page and the app and 
 The PocketBase dashboard is available at `/_/` on the backend URL after its initial setup. Runtime data is intentionally local and ignored by Git.
 PocketBase also provides the API health check at `/api/health` and enables permissive development CORS by default.
 
+## Landing page
+
+The landing page is Polish-only and targets adult hobby learners. All copy, contact details, prices
+and FAQ entries live in a single file, `apps/landing/src/data/site.ts`. Values that are not yet known
+are marked with a `TODO:` prefix and render as-is on the page, so an unfilled field is impossible to
+miss. Never replace a `TODO:` with an invented value.
+
+Optional environment variables for the landing page:
+
+- `PUBLIC_APP_URL` — target of the "Zaloguj się" links. Set automatically by `npm run dev`.
+- `PUBLIC_UMAMI_SRC` and `PUBLIC_UMAMI_WEBSITE_ID` — Umami analytics. The script is only emitted when
+  both are set, so local and preview builds stay tracking-free. Umami is cookieless, so no consent
+  banner is required.
+
+Before going live, set the real domain in `apps/landing/astro.config.mjs` (`site`) and in
+`apps/landing/public/robots.txt`; the sitemap is generated from it.
+
 ## Useful commands
 
 ```sh

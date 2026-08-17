@@ -1,37 +1,90 @@
 ---
+import { site } from "../data/site";
+import "../styles/global.css";
+
 interface Props {
   title?: string;
   description?: string;
 }
 
-const {
-  title = "Nutka — Find your sound",
-  description = "Supportive online music lessons for every curious musician.",
-} = Astro.props;
+const { title = site.meta.title, description = site.meta.description } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(site.meta.ogImage, Astro.site);
+
+// Umami jest bezcookie'owe, więc nie wymaga bannera zgody.
+// Skrypt renderuje się wyłącznie wtedy, gdy obie zmienne są ustawione — lokalnie nie zbieramy niczego.
+const umamiSrc = import.meta.env.PUBLIC_UMAMI_SRC;
+const umamiWebsiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "MusicSchool",
+  name: site.teacherName,
+  description: site.meta.description,
+  url: canonical.origin,
+  image: ogImage.href,
+  telephone: site.contact.phone,
+  email: site.contact.email,
+  areaServed: site.contact.city,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: site.contact.city,
+    streetAddress: site.contact.address,
+    addressCountry: "PL",
+  },
+  founder: {
+    "@type": "Person",
+    name: site.teacherName,
+    jobTitle: "Nauczycielka gry na pianinie, keyboardzie i gitarze",
+  },
+};
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pl_PL" />
+    <meta property="og:site_name" content={site.teacherName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
+
+    {
+      umamiSrc && umamiWebsiteId && (
+        <script defer src={umamiSrc} data-website-id={umamiWebsiteId} is:inline />
+      )
+    }
+
+    <!-- Ustawiane przed renderem: stan ukryty sekcji obowiązuje tylko przy działającym JS,
+         żeby bez skryptu treść pozostała widoczna. -->
+    <script is:inline>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body>
+    <a
+      href="#tresc"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:font-semibold focus:text-cream"
+    >
+      Przejdź do treści
+    </a>
     <slot />
   </body>
 </html>
-
-<style is:global>
-  :root {
-    color: #17231f;
-    background: #f9f5ed;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  }
-
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; }
-  a { color: inherit; }
-</style>

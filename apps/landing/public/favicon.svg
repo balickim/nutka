@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nuta">
+  <rect width="64" height="64" rx="14" fill="#0C3A2B" />
+  <g fill="#0BB50E">
+    <ellipse cx="24" cy="45" rx="11" ry="8.5" transform="rotate(-18 24 45)" />
+    <rect x="32" y="12" width="5" height="33" rx="2.5" />
+    <path d="M37 13c9 3.5 14 8 12.5 15.5C48 22 43.5 18.5 37 16.5z" />
+  </g>
+</svg>

@@ -1,0 +1,89 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import { site } from "../data/site";
+
+const { pricing, contact } = site;
+
+const title = `Cennik lekcji pianina, keyboardu i gitary — ${site.teacherName}`;
+const description =
+  "Cennik lekcji pianina, keyboardu i gitary dla dorosłych: lekcja próbna, zajęcia 45 i 60 minut, stacjonarnie i online, pakiety.";
+---
+
+<BaseLayout title={title} description={description}>
+  <SiteHeader />
+
+  <main id="tresc">
+    <section class="container-x pt-14 pb-4">
+      <p class="eyebrow">{pricing.eyebrow}</p>
+      <h1 class="mt-4 max-w-3xl text-[clamp(2.4rem,6vw,4rem)]">{pricing.title}</h1>
+      <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted">
+        Wszystkie stawki dotyczą lekcji indywidualnych. Pierwsza lekcja jest krótsza i tańsza — sprawdzasz
+        bez zobowiązania na dalsze zajęcia.
+      </p>
+    </section>
+
+    <section class="container-x section pt-10">
+      <ul class="divide-y divide-line border-y border-line">
+        {
+          pricing.items.map((item) => (
+            <li class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-6">
+              <div>
+                <h2 class="font-display text-2xl">{item.name}</h2>
+                <p class="mt-1 text-muted">{item.detail}</p>
+              </div>
+              <p class="font-display text-2xl font-semibold whitespace-nowrap">{item.price}</p>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="mt-14 grid gap-10 lg:grid-cols-2">
+        <div class="rounded-block border border-line bg-cream-deep/50 p-8">
+          <h2 class="text-2xl">Zasady i płatności</h2>
+          <ul class="mt-6 space-y-4 leading-relaxed text-muted">
+            {
+              pricing.rules.map((rule) => (
+                <li class="flex gap-3">
+                  <span class="mt-2 block h-1.5 w-1.5 shrink-0 rounded-full bg-grass" aria-hidden="true" />
+                  <span>{rule}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="rounded-block bg-ink p-8 text-cream">
+          <h2 class="text-2xl">Kontakt</h2>
+          <p class="mt-4 leading-relaxed text-cream/80">
+            Najprościej napisać albo zadzwonić. Ustalimy instrument, termin i tryb zajęć.
+          </p>
+          <ul class="mt-8 space-y-3">
+            <li>
+              <a href={contact.phoneHref} class="font-semibold underline-offset-4 hover:underline">
+                {contact.phone}
+              </a>
+            </li>
+            <li>
+              <a href={contact.emailHref} class="font-semibold underline-offset-4 hover:underline">
+                {contact.email}
+              </a>
+            </li>
+            <li class="text-cream/80">{contact.address}</li>
+            <li class="text-cream/80">{contact.city}</li>
+          </ul>
+          <a href={contact.whatsappHref} class="btn btn-accent mt-8">Napisz na WhatsApp</a>
+        </div>
+      </div>
+
+      <p class="mt-12">
+        <a href="/" class="font-semibold underline-offset-4 hover:underline">
+          <span aria-hidden="true">←</span> Wróć na stronę główną
+        </a>
+      </p>
+    </section>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>

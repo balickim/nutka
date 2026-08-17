@@ -1,0 +1,37 @@
+---
+import { site } from "../data/site";
+
+const { instruments } = site;
+---
+
+<section id="lekcje" class="container-x section reveal">
+  <p class="eyebrow">{instruments.eyebrow}</p>
+  <h2 class="mt-4 max-w-3xl text-[clamp(2rem,4.5vw,3.4rem)]">{instruments.title}</h2>
+
+  <div class="mt-12 grid gap-6 md:grid-cols-2">
+    {
+      instruments.items.map((item, index) => (
+        <article class="group relative overflow-hidden rounded-block border border-line bg-cream-deep/50 p-8 transition-shadow hover:shadow-lift sm:p-10">
+          <span
+            class:list={[
+              "absolute -top-8 -right-4 font-display text-[10rem] leading-none transition-transform duration-500 group-hover:-translate-y-1",
+              index === 0 ? "text-grass/25" : "text-apricot/45",
+            ]}
+            aria-hidden="true"
+          >
+            {item.symbol}
+          </span>
+          <h3 class="relative text-3xl">{item.name}</h3>
+          <p class="relative mt-4 max-w-md leading-relaxed text-muted">{item.description}</p>
+          <a
+            href="#kontakt"
+            class="relative mt-7 inline-flex items-center gap-2 font-semibold underline-offset-4 hover:underline"
+          >
+            Umów lekcję próbną
+            <span aria-hidden="true">→</span>
+          </a>
+        </article>
+      ))
+    }
+  </div>
+</section>
