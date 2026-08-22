@@ -27,8 +27,9 @@ PocketBase also provides the API health check at `/api/health` and enables permi
 
 ## Landing page
 
-The landing page is Polish-only and targets adult hobby learners. All copy, contact details, prices
-and FAQ entries live in a single file, `apps/landing/src/data/site.ts`. Values that are not yet known
+The landing page is Polish-only and targets adult hobby learners. Copy lives in
+`apps/landing/src/data/site.ts`; contact details, prices, photos and other deployment-specific values
+live in `apps/landing/src/data/config.ts`. Values that are not yet known
 are marked with a `TODO:` prefix and render as-is on the page, so an unfilled field is impossible to
 miss. Never replace a `TODO:` with an invented value.
 
@@ -39,7 +40,7 @@ Optional environment variables for the landing page:
   both are set, so local and preview builds stay tracking-free. Umami is cookieless, so no consent
   banner is required.
 
-Before going live, set the real domain in `apps/landing/astro.config.mjs` (`site`) and in
+Before going live, set the real domain in `apps/landing/src/data/config.ts` (`siteUrl`) and in
 `apps/landing/public/robots.txt`; the sitemap is generated from it.
 
 ## Useful commands

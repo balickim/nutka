@@ -1,13 +1,13 @@
 /**
- * Jedyne źródło treści i danych dla landingu oraz podstrony /cennik.
+ * Źródło treści landingu oraz podstrony /cennik.
  *
- * Zasada: nic zmyślonego. Każda wartość, której jeszcze nie znamy, ma prefiks "TODO:"
- * i w tej postaci jest widoczna na stronie — dzięki temu nieuzupełnione pole rzuca się
- * w oczy zamiast po cichu trafić na produkcję jako wymyślony fakt.
+ * Treści marketingowe są tutaj, a dane zależne od wdrożenia — w ./config.ts.
  *
  * Copy pisane jest w czasie teraźniejszym i formach bezosobowych. Polski czas przeszły
  * jest rodzajowy ("zaczynałeś" / "zaczynałaś"), a strona mówi do wszystkich odbiorców naraz.
  */
+
+import { config } from "./config";
 
 export type Photo = string | null;
 
@@ -22,7 +22,7 @@ export interface PriceItem {
   price: string;
 }
 
-const teacherName = "Dominika Łuczyszyn";
+const teacherName = config.teacherName;
 
 export const site = {
   teacherName,
@@ -35,14 +35,7 @@ export const site = {
   },
 
   contact: {
-    // TODO: uzupełnić prawdziwe dane kontaktowe.
-    phone: "TODO: numer telefonu",
-    phoneHref: "tel:+48000000000",
-    email: "TODO: adres e-mail",
-    emailHref: "mailto:kontakt@example.com",
-    whatsappHref: "https://wa.me/48000000000",
-    city: "TODO: miasto",
-    address: "TODO: adres pracowni",
+    ...config.contact,
   },
 
   nav: [
@@ -59,7 +52,7 @@ export const site = {
     lede: "Bez egzaminów, ocen i presji. Uczę dorosłych, którzy chcą grać dla własnej przyjemności — w swoim tempie i na swoich warunkach.",
     ctaPrimary: "Umów lekcję próbną",
     ctaSecondary: "Zobacz, jak zacząć",
-    photo: null as Photo,
+    photo: config.photos.hero,
   },
 
   objections: {
@@ -113,7 +106,7 @@ export const site = {
       "TODO: wykształcenie muzyczne, ukończone szkoły, doświadczenie sceniczne.",
       "TODO: zdanie osobiste — dlaczego uczysz i co najbardziej cieszy Cię w tej pracy.",
     ],
-    portrait: null as Photo,
+    portrait: config.photos.portrait,
   },
 
   howItWorks: {
@@ -140,8 +133,7 @@ export const site = {
   },
 
   app: {
-    // TODO: gdy aplikacja będzie dostępna dla uczniów, usunąć badge i zmienić czas na teraźniejszy.
-    available: false,
+    available: config.app.available,
     badge: "W przygotowaniu",
     eyebrow: "Aplikacja dla uczniów",
     title: "Wszystko z lekcji w jednym miejscu.",
@@ -156,31 +148,21 @@ export const site = {
   testimonials: {
     // Zostaje wyłączone dopóki nie pojawią się prawdziwe wypowiedzi uczniów.
     // Zmyślone opinie z imionami wprowadzają klienta w błąd — sekcja włącza się jedną linią.
-    enabled: false,
+    enabled: config.testimonials.enabled,
     eyebrow: "Opinie",
     title: "Co mówią uczniowie.",
-    items: [] as Testimonial[],
+    items: config.testimonials.items,
   },
 
   pricing: {
     eyebrow: "Cennik",
     title: "Jasne stawki, bez ukrytych kosztów.",
-    from: "TODO: cena",
+    from: config.pricing.from,
     fromUnit: "za 60 minut",
     teaserNote: "Lekcja próbna jest krótsza i tańsza — sprawdzasz bez zobowiązań.",
     ctaLabel: "Zobacz pełny cennik",
-    items: [
-      { name: "Lekcja próbna", detail: "45 minut, stacjonarnie lub online", price: "TODO: cena" },
-      { name: "Lekcja 60 minut", detail: "Stacjonarnie", price: "TODO: cena" },
-      { name: "Lekcja 45 minut", detail: "Stacjonarnie", price: "TODO: cena" },
-      { name: "Lekcja 60 minut", detail: "Online", price: "TODO: cena" },
-      { name: "Pakiet 4 lekcji", detail: "Rozliczany z góry, ważny przez miesiąc", price: "TODO: cena" },
-    ] as PriceItem[],
-    rules: [
-      "TODO: zasady odwoływania lekcji — do ilu godzin przed zajęciami i ile odwołań bez opłaty.",
-      "TODO: forma płatności — gotówka, przelew, termin rozliczenia.",
-      "TODO: czy jest dojazd do ucznia i w jakich okolicach.",
-    ],
+    items: config.pricing.items,
+    rules: config.pricing.rules,
   },
 
   faq: {
