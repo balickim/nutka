@@ -1,10 +1,10 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
+import { config } from "./src/data/config";
 
 export default defineConfig({
-  // TODO: podmienić na docelową domenę. Bez tego sitemap się nie wygeneruje.
-  site: "https://dominikaluczyszyn.pl",
+  site: config.siteUrl,
   integrations: [sitemap()],
   server: {
     host: "127.0.0.1",
