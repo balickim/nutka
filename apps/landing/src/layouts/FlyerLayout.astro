@@ -1,0 +1,38 @@
+---
+/**
+ * Layout arkusza do druku. Świadomie nie korzysta z BaseLayout.astro:
+ * OG-tagi, JSON-LD, Umami i skip-link nie mają żadnego znaczenia na kartce papieru,
+ * a /ulotka jest artefaktem produkcyjnym, nie treścią dla użytkowników.
+ */
+import "../styles/print-flyer.css";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="sheet">
+      <slot />
+    </div>
+
+    <!-- Linie cięcia i marginesu włącza ?guides w adresie. Strona jest statyczna,
+         więc parametru nie da się odczytać przy budowaniu — stąd przełączenie w przeglądarce.
+         Render do PDF-a jedzie bez parametru, czyli bez linii. -->
+    <script is:inline>
+      if (new URLSearchParams(location.search).has("guides")) {
+        document.querySelector(".sheet")?.classList.add("guides");
+      }
+    </script>
+  </body>
+</html>

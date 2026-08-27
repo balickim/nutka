@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Wygenerowane pliki do druku (npm run flyer)
+dist-print/
 .astro/
 .vite/
 coverage/

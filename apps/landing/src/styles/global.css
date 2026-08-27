@@ -4,33 +4,8 @@
    Podział na unicode-range sprawia, że dla polskiego pobierają się tylko pliki latin i latin-ext. */
 @import "@fontsource-variable/fraunces/wght.css";
 @import "@fontsource-variable/inter/wght.css";
+@import "./tokens.css";
 
-@theme {
-  /* Paleta wyprowadzona z #0bb50e.
-     UWAGA: --color-grass ma kontrast 2,6:1 na kremie i 2,8:1 z bielą — nie przechodzi WCAG AA.
-     Wolno go używać wyłącznie jako dużej plamy i jako tła pod CIEMNYM tekstem (5,8:1). Nigdy jako koloru tekstu. */
-  --color-cream: #f9f5ed;
-  --color-cream-deep: #f2ece0;
-  /* Butelkowa z nutą morskiej. Celowo w innym odcieniu niż --color-grass: gdy ciemne tło
-     i akcent siedzą w tym samym odcieniu, sekcje wyglądają jak przyciemniony akcent.
-     Kontrast na kremie 11,7:1, kremowy tekst na --color-ink-soft 8,2:1. */
-  --color-ink: #0c3a2b;
-  --color-ink-soft: #11543e;
-  --color-grass: #0bb50e;
-  --color-grass-deep: #089c0b;
-  --color-apricot: #ff9e5e;
-  --color-apricot-soft: #ffd9bd;
-  --color-muted: #4a5a4c;
-  --color-line: #ded6c6;
-
-  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-
-  --radius-card: 1.25rem;
-  --radius-block: 2rem;
-
-  --shadow-lift: 0 1px 2px rgb(11 61 14 / 0.06), 0 12px 32px -12px rgb(11 61 14 / 0.18);
-}
 
 @layer base {
   html {
