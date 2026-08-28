@@ -30,14 +30,14 @@ const qrSvg = await QRCode.toString(flyer.siteUrl, {
   <FlyerBackdrop />
 
   <div class="sheet-body">
-    <p class="eyebrow">{flyer.eyebrow}</p>
-
-    <h1 class="mt-[3mm] text-[23pt]">
+    <h1 class="mt-[2mm] text-[23pt]">
       {flyer.title}<br />
       <span class="marker">{flyer.titleAccent}</span>
     </h1>
 
-    <p class="mt-[5mm] text-[10pt] leading-relaxed text-muted">{flyer.lede}</p>
+    <p class="eyebrow mt-[5mm]">{flyer.eyebrow}</p>
+
+    <p class="mt-[3mm] text-[10pt] leading-relaxed text-muted">{flyer.lede}</p>
 
     <ul class="mt-[8mm] flex flex-col gap-[4.5mm]">
       {
@@ -54,7 +54,7 @@ const qrSvg = await QRCode.toString(flyer.siteUrl, {
       }
     </ul>
 
-    <ul class="mt-[7mm] flex flex-wrap gap-[2mm]">
+    <ul class="mt-[4mm] flex flex-wrap gap-[2mm]">
       {flyer.modes.map((mode) => <li class="pill">{mode}</li>)}
     </ul>
 

@@ -24,7 +24,7 @@ export const flyer = {
   points: [
     {
       claim: "Bez egzaminów i ocen",
-      detail: "Nikt Cię nie sprawdza. Repertuar wybieramy razem, pod to, co chcesz zagrać.",
+      detail: "Postęp widać po tym, co potrafisz zagrać. Repertuar dobieramy razem — pod utwory, które chcesz umieć.",
     },
     {
       claim: "Nie musisz mieć talentu",

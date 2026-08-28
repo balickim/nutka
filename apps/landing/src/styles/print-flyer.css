@@ -100,12 +100,13 @@
 
   /* Rysunki instrumentów pod treścią. Wektor w jednym kolorze: przy tak niskim kryciu
      zieleń zeszłaby do szarości, więc kreska jest w butelkowej z palety.
-     Krycie 8% daje na papierze ledwie widoczny raster i nie rusza czytelności tekstu. */
+     Krycie 14%: rysunek ma być czytelny jako motyw, ale nadal zostać tłem. Niżej niż
+     ok. 5% offset i tak gubi raster, więc podbicie pomaga też w samym druku. */
   .backdrop {
     position: absolute;
     inset: 0;
     color: var(--color-ink);
-    opacity: 0.08;
+    opacity: 0.14;
     pointer-events: none;
   }
 
