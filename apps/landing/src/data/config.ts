@@ -5,6 +5,8 @@ import type { Photo, PriceItem, Testimonial } from "./site";
  * Uzupełnij wartości oznaczone prefiksem "TODO:" przed publikacją strony.
  */
 export const config = {
+  // TODO: docelowa domena. Od niej zależy adres drukowany na ulotce i treść kodu QR,
+  // dlatego trzeba ją potwierdzić przed wysłaniem pliku do drukarni.
   siteUrl: "https://dominikaluczyszyn.pl",
   appUrlFallback: "http://127.0.0.1:5173",
   teacherName: "Dominika Łuczyszyn",

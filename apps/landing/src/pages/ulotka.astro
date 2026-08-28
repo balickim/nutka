@@ -1,0 +1,98 @@
+---
+/**
+ * Przód ulotki A5 (152 × 214 mm brutto) do wydruku w Drukomacie.
+ * PDF powstaje przez `npm run flyer` — patrz scripts/flyer.mjs.
+ */
+import QRCode from "qrcode";
+import FlyerLayout from "../layouts/FlyerLayout.astro";
+import FlyerBackdrop from "../components/FlyerBackdrop.astro";
+import { flyer } from "../data/flyer";
+
+const { contact } = flyer;
+const siteLabel = flyer.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+/**
+ * Kod QR składany przy budowaniu strony, nie w przeglądarce — do PDF-a musi trafić
+ * gotowa grafika. Wyjściem jest SVG, więc moduły zostają wektorem i nie rozmyją się w druku.
+ *
+ * Korekcja "M" (~15% odzysku) to standard dla drukowanych adresów: wyższy poziom
+ * zagęszcza moduły, a te przy 22 mm robią się za drobne dla przeciętnego aparatu.
+ */
+const qrSvg = await QRCode.toString(flyer.siteUrl, {
+  type: "svg",
+  margin: 0,
+  errorCorrectionLevel: "M",
+  color: { dark: "#0c3a2b", light: "#0000" },
+});
+---
+
+<FlyerLayout title="Ulotka A5 — lekcje keyboardu i gitary">
+  <FlyerBackdrop />
+
+  <div class="sheet-body">
+    <h1 class="mt-[2mm] text-[23pt]">
+      {flyer.title}<br />
+      <span class="marker">{flyer.titleAccent}</span>
+    </h1>
+
+    <p class="eyebrow mt-[5mm]">{flyer.eyebrow}</p>
+
+    <p class="mt-[3mm] text-[10pt] leading-relaxed text-muted">{flyer.lede}</p>
+
+    <ul class="mt-[8mm] flex flex-col gap-[4.5mm]">
+      {
+        flyer.points.map((point) => (
+          <li class="flex gap-[3mm]">
+            {/* Kropka jako plama zieleni, nie jako znak pisma — zieleń nie przechodzi kontrastu tekstowego. */}
+            <span class="mt-[1.6mm] h-[2mm] w-[2mm] shrink-0 rounded-full bg-grass" aria-hidden="true" />
+            <span>
+              <span class="block text-[10pt] font-semibold">{point.claim}</span>
+              <span class="mt-[1mm] block text-[8.5pt] leading-snug text-muted">{point.detail}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <ul class="mt-[4mm] flex flex-wrap gap-[2mm]">
+      {flyer.modes.map((mode) => <li class="pill">{mode}</li>)}
+    </ul>
+
+    <!-- Darmowa lekcja próbna to najmocniejszy argument na kartce, więc dostaje własną plamę koloru.
+         mt-auto dociska ją do stopki niezależnie od długości copy wyżej. -->
+    <div class="mt-auto mb-[6mm] rounded-[4mm] bg-apricot-soft px-[5mm] py-[4mm]">
+      <p class="text-[11pt] font-semibold">{flyer.offer.label}</p>
+      <p class="mt-[1mm] text-[8.5pt] leading-snug">{flyer.offer.detail}</p>
+    </div>
+  </div>
+
+  <footer class="sheet-footer flex items-end justify-between gap-[5mm]">
+    <div>
+      <p class="font-display text-[13pt]">{flyer.contactLead}</p>
+
+      <dl class="mt-[4mm] grid grid-cols-[auto_auto] gap-x-[6mm] gap-y-[2.5mm] text-[9pt]">
+        <div>
+          <dt class="text-[6.5pt] font-bold tracking-[0.12em] uppercase opacity-70">Telefon</dt>
+          <dd class="mt-[0.5mm] font-semibold">{contact.phone}</dd>
+        </div>
+        <div>
+          <dt class="text-[6.5pt] font-bold tracking-[0.12em] uppercase opacity-70">E-mail</dt>
+          <dd class="mt-[0.5mm] font-semibold">{contact.email}</dd>
+        </div>
+        <div>
+          <dt class="text-[6.5pt] font-bold tracking-[0.12em] uppercase opacity-70">Pracownia</dt>
+          <dd class="mt-[0.5mm] font-semibold">{contact.address}</dd>
+        </div>
+        <div>
+          <dt class="text-[6.5pt] font-bold tracking-[0.12em] uppercase opacity-70">Strona</dt>
+          <dd class="mt-[0.5mm] font-semibold">{siteLabel}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="shrink-0 text-center">
+      <div class="qr" set:html={qrSvg} />
+      <p class="mt-[1.5mm] w-[26mm] text-[6pt] leading-tight opacity-70">{flyer.qrCaption}</p>
+    </div>
+  </footer>
+</FlyerLayout>

@@ -1,0 +1,198 @@
+/* Arkusz ulotki A5 do druku (trasa /ulotka).
+   Celowo NIE importuje global.css: tam wszystko jest responsywne i liczone w rem/vw,
+   a kartka papieru ma stałe wymiary w milimetrach i nie ma stanów hover ani focus.
+   Wspólne z landingiem są wyłącznie tokeny (paleta, kroje) z ./tokens.css.
+
+   Specyfikacja Drukomatu, ulotka pionowa A5:
+     format netto   148 × 210 mm
+     format brutto  152 × 214 mm  (spad 2 mm z każdej strony)
+     margines wewn.   3 mm        (żadnych tekstów ani logo)
+   Stąd --edge = 2 + 3 = 5 mm: nieprzekraczalna linia dla treści. */
+
+@import "tailwindcss";
+@import "@fontsource-variable/fraunces/wght.css";
+@import "@fontsource-variable/inter/wght.css";
+@import "./tokens.css";
+
+@page {
+  size: 152mm 214mm;
+  margin: 0;
+}
+
+:root {
+  --sheet-w: 152mm;
+  --sheet-h: 214mm;
+  --bleed: 2mm;
+  --safe: 3mm;
+  --edge: 5mm;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* Druk nie skaluje się z oknem: bazą dla wszystkich rozmiarów jest punkt typograficzny. */
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.04;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p,
+  ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    list-style: none;
+  }
+}
+
+@layer components {
+  .sheet {
+    box-sizing: border-box;
+    width: var(--sheet-w);
+    height: var(--sheet-h);
+    display: flex;
+    flex-direction: column;
+    /* Nic nie może wyjść poza brutto: przepełniona treść to błąd projektu,
+       a nie powód, żeby układ wylał się na kolejną stronę PDF-a. */
+    overflow: hidden;
+    position: relative;
+    background-color: var(--color-cream);
+  }
+
+  /* Treść. Padding = spad + margines wewnętrzny, więc wszystko w środku jest bezpieczne. */
+  .sheet-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--edge) var(--edge) 0;
+    min-height: 0;
+    position: relative;
+  }
+
+  /* Stopka kontaktowa dochodzi do krawędzi pliku (spad), ale jej tekst
+     zostaje w środku dzięki paddingowi liczonemu od --edge. */
+  .sheet-footer {
+    background-color: var(--color-ink);
+    color: var(--color-cream);
+    /* Dół to 7 mm zamiast wymaganych 5: przy cięciu w stosie arkusze potrafią uciec
+       o ułamek milimetra, a ostatni wiersz kontaktu nie ma zapasu na taki błąd. */
+    padding: 6mm var(--edge) 7mm;
+    position: relative;
+  }
+
+  /* Rysunki instrumentów pod treścią. Wektor w jednym kolorze: przy tak niskim kryciu
+     zieleń zeszłaby do szarości, więc kreska jest w butelkowej z palety.
+     Krycie 14%: rysunek ma być czytelny jako motyw, ale nadal zostać tłem. Niżej niż
+     ok. 5% offset i tak gubi raster, więc podbicie pomaga też w samym druku. */
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    color: var(--color-ink);
+    opacity: 0.14;
+    pointer-events: none;
+  }
+
+  /* Kod QR siedzi na jasnym polu również wtedy, gdy stopka jest ciemna:
+     czytniki radzą sobie źle z odwróconym kontrastem.
+
+     Padding to biała strefa ciszy, bez której kod bywa nieczytelny. Norma wymaga
+     czterech modułów: przy 29 modułach na 24 mm jeden moduł ma 0,83 mm, czyli
+     potrzeba 3,3 mm — stąd 3,5 mm z zapasem. */
+  .qr {
+    background-color: var(--color-cream);
+    border-radius: 2mm;
+    padding: 3.5mm;
+  }
+
+  .qr svg {
+    display: block;
+    width: 24mm;
+    height: 24mm;
+  }
+
+  /* Zaznaczenie zakreślaczem — ten sam gradient co na stronie (.marker w global.css).
+     Zieleń jest tu plamą tła pod ciemnym tekstem, nigdy kolorem pisma. */
+  .marker {
+    background-image: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--color-grass) 42%, transparent) 0 0.28em,
+      transparent 0.28em
+    );
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .eyebrow {
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .pill {
+    display: inline-block;
+    border: 0.25mm solid var(--color-line);
+    background-color: var(--color-cream-deep);
+    border-radius: 999px;
+    padding: 1.4mm 3mm;
+    font-size: 7.5pt;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+}
+
+/* Podgląd w przeglądarce: kartka na szarym tle, żeby było widać jej krawędzie.
+   Przy druku (i w PDF) ta reguła nie obowiązuje. */
+@media screen {
+  body {
+    background-color: #d8d4cc;
+    display: flex;
+    justify-content: center;
+    padding: 8mm 0;
+  }
+
+  .sheet {
+    box-shadow: 0 2mm 8mm rgb(0 0 0 / 0.25);
+  }
+}
+
+/* Linie kontrolne: włączane query paramem ?guides, wyłącznie do sprawdzenia układu.
+   Render do PDF-a jedzie bez parametru, więc do pliku dla drukarni nie trafiają. */
+.guides::before,
+.guides::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* Linia cięcia — granica formatu netto 148 × 210 mm. */
+.guides::before {
+  inset: var(--bleed);
+  outline: 0.2mm dashed #e0007a;
+}
+
+/* Margines wewnętrzny — poza tę ramkę nie wolno wypuścić tekstu ani logo. */
+.guides::after {
+  inset: var(--edge);
+  outline: 0.2mm dashed #00a0e0;
+}

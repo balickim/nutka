@@ -5,7 +5,8 @@ import { config } from "./src/data/config";
 
 export default defineConfig({
   site: config.siteUrl,
-  integrations: [sitemap()],
+  // /ulotka to arkusz do druku, nie strona dla odwiedzających — poza mapą witryny.
+  integrations: [sitemap({ filter: (page) => !page.includes("/ulotka") })],
   server: {
     host: "127.0.0.1",
   },

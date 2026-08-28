@@ -11,11 +11,13 @@
     "dev:landing": "npm run dev --workspace=@nutka/landing",
     "dev:app": "npm run dev --workspace=@nutka/app",
     "dev:backend": "cd apps/backend && go run . serve",
+    "flyer": "node scripts/flyer.mjs",
     "build": "npm run build --workspace=@nutka/landing && npm run build --workspace=@nutka/app",
     "check": "npm run check --workspace=@nutka/landing && npm run check --workspace=@nutka/app && cd apps/backend && go test ./..."
   },
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "concurrently": "^10.0.5",
+    "puppeteer-core": "^25.9.0"
   },
   "engines": {
     "node": ">=22.19.0",
