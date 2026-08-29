@@ -20,7 +20,7 @@ export const flyer = {
   contact: { ...config.contact },
 
   eyebrow: "Lekcje stacjonarne, indywidualnie",
-  title: "Nauka gry na keyboardzie i gitarze",
+  title: "Nauka gry na gitarze i keyboardzie",
   titleAccent: "dla początkujących.",
 
   lede: "Zaczynamy od zera i idziemy w Twoim tempie. Grasz dla własnej przyjemności, a\u00A0nie\u00A0dla\u00A0ocen.",
@@ -44,7 +44,7 @@ export const flyer = {
     },
   ],
 
-  modes: ["Keyboard", "Gitara", "Indywidualnie", "Materiały po lekcji"],
+  modes: ["Gitara", "Keyboard", "Indywidualnie", "Materiały po lekcji"],
 
   offer: {
     label: "Pierwsza lekcja próbna za darmo",
