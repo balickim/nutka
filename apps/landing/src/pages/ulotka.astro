@@ -16,7 +16,7 @@ const siteLabel = flyer.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
  * gotowa grafika. Wyjściem jest SVG, więc moduły zostają wektorem i nie rozmyją się w druku.
  *
  * Korekcja "M" (~15% odzysku) to standard dla drukowanych adresów: wyższy poziom
- * zagęszcza moduły, a te przy 22 mm robią się za drobne dla przeciętnego aparatu.
+ * zagęszcza moduły, a te przy 19 mm robią się za drobne dla przeciętnego aparatu.
  */
 const qrSvg = await QRCode.toString(flyer.siteUrl, {
   type: "svg",
@@ -26,7 +26,7 @@ const qrSvg = await QRCode.toString(flyer.siteUrl, {
 });
 ---
 
-<FlyerLayout title="Ulotka A5 — lekcje keyboardu i gitary">
+<FlyerLayout title="Ulotka A5 — lekcje gitary i keyboardu">
   <FlyerBackdrop />
 
   <div class="sheet-body">
@@ -92,7 +92,7 @@ const qrSvg = await QRCode.toString(flyer.siteUrl, {
 
     <div class="shrink-0 text-center">
       <div class="qr" set:html={qrSvg} />
-      <p class="mt-[1.5mm] w-[26mm] text-[6pt] leading-tight opacity-70">{flyer.qrCaption}</p>
+      <p class="mt-[1.5mm] w-[25mm] text-[6pt] leading-tight opacity-70">{flyer.qrCaption}</p>
     </div>
   </footer>
 </FlyerLayout>

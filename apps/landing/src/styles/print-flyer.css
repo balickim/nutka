@@ -94,7 +94,7 @@
     color: var(--color-cream);
     /* Dół to 7 mm zamiast wymaganych 5: przy cięciu w stosie arkusze potrafią uciec
        o ułamek milimetra, a ostatni wiersz kontaktu nie ma zapasu na taki błąd. */
-    padding: 6mm var(--edge) 7mm;
+    padding: 4mm var(--edge) 7mm;
     position: relative;
   }
 
@@ -114,18 +114,18 @@
      czytniki radzą sobie źle z odwróconym kontrastem.
 
      Padding to biała strefa ciszy, bez której kod bywa nieczytelny. Norma wymaga
-     czterech modułów: przy 29 modułach na 24 mm jeden moduł ma 0,83 mm, czyli
-     potrzeba 3,3 mm — stąd 3,5 mm z zapasem. */
+     czterech modułów: przy 29 modułach na 19 mm jeden moduł ma 0,66 mm, czyli
+     potrzeba 2,6 mm — stąd 3 mm z zapasem. */
   .qr {
     background-color: var(--color-cream);
     border-radius: 2mm;
-    padding: 3.5mm;
+    padding: 3mm;
   }
 
   .qr svg {
     display: block;
-    width: 24mm;
-    height: 24mm;
+    width: 19mm;
+    height: 19mm;
   }
 
   /* Zaznaczenie zakreślaczem — ten sam gradient co na stronie (.marker w global.css).

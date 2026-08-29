@@ -28,9 +28,9 @@ export const site = {
   teacherName,
 
   meta: {
-    title: `${teacherName} — lekcje keyboardu i gitary dla dorosłych`,
+    title: `${teacherName} — lekcje gitary i keyboardu dla dorosłych`,
     description:
-      "Lekcje keyboardu i gitary dla dorosłych, którzy chcą grać dla własnej przyjemności. Bez egzaminów, ocen i presji, stacjonarnie i online. Umów lekcję próbną.",
+      "Lekcje gitary i keyboardu dla dorosłych, którzy chcą grać dla własnej przyjemności. Bez egzaminów, ocen i presji, stacjonarnie i online. Umów lekcję próbną.",
     ogImage: "/og.png",
   },
 
@@ -46,7 +46,7 @@ export const site = {
   ],
 
   hero: {
-    eyebrow: "Keyboard i gitara · stacjonarnie i online",
+    eyebrow: "Gitara i keyboard · stacjonarnie i online",
     title: "To nie jest szkoła muzyczna.",
     titleAccent: "Tu grasz dla siebie.",
     lede: "Bez egzaminów, ocen i presji. Uczę dorosłych, którzy chcą grać dla własnej przyjemności — w swoim tempie i na swoich warunkach.",
@@ -79,19 +79,19 @@ export const site = {
 
   instruments: {
     eyebrow: "Lekcje",
-    title: "Keyboard albo gitara. Jeden powód: chcesz grać.",
+    title: "Gitara albo keyboard. Jeden powód: chcesz grać.",
     items: [
-      {
-        name: "Keyboard",
-        symbol: "♪",
-        description:
-          "Od pierwszego akordu po utwór, który chodzi Ci po głowie od lat. Klasyka, pop, muzyka filmowa — repertuar wybieramy razem. Do ćwiczeń w domu keyboard w zupełności wystarczy.",
-      },
       {
         name: "Gitara klasyczna i akustyczna",
         symbol: "♫",
         description:
           "Akordy do śpiewania w gronie znajomych, palcówki, ulubione utwory — zaczynamy od tego, co chcesz zagrać.",
+      },
+      {
+        name: "Keyboard",
+        symbol: "♪",
+        description:
+          "Od pierwszego akordu po utwór, który chodzi Ci po głowie od lat. Klasyka, pop, muzyka filmowa — repertuar wybieramy razem. Do ćwiczeń w domu keyboard w zupełności wystarczy.",
       },
     ],
     modes: ["Stacjonarnie", "Online", "Dla początkujących", "Dla powracających"],
@@ -101,7 +101,7 @@ export const site = {
     eyebrow: "O mnie",
     title: "Uczę tak, żeby chciało się wrócić do instrumentu w kolejnym tygodniu.",
     paragraphs: [
-      "Od wielu lat uczę gry na keyboardzie i gitarze — dzieci i dorosłych. Praca z dziećmi nauczyła mnie rozkładania trudnych rzeczy na najmniejsze możliwe kroki. Praca z dorosłymi — tego, że o powodzeniu decyduje nie talent, tylko to, czy lekcja daje frajdę.",
+      "Od wielu lat uczę gry na gitarze i keyboardzie — dzieci i dorosłych. Praca z dziećmi nauczyła mnie rozkładania trudnych rzeczy na najmniejsze możliwe kroki. Praca z dorosłymi — tego, że o powodzeniu decyduje nie talent, tylko to, czy lekcja daje frajdę.",
       "TODO: wykształcenie muzyczne, ukończone szkoły, doświadczenie sceniczne.",
       "TODO: zdanie osobiste — dlaczego uczysz i co najbardziej cieszy Cię w tej pracy.",
     ],
@@ -176,7 +176,7 @@ export const site = {
       {
         question: "Nie mam instrumentu w domu. Co wtedy?",
         answer:
-          "Na pierwszą lekcję instrument nie jest potrzebny, ale do ćwiczenia w domu już tak. Przy klawiszach na start w zupełności wystarczy zwykły keyboard. Przy gitarze początkującym polecam klasyczną: nylonowe struny są łagodniejsze dla nieprzyzwyczajonych palców, a szerszy gryf wybacza więcej przy ustawianiu ręki. Chętnie doradzę przed zakupem, żeby nie przepłacić.",
+          "Na pierwszą lekcję instrument nie jest potrzebny, ale do ćwiczenia w domu już tak. Przy gitarze początkującym polecam klasyczną: nylonowe struny są łagodniejsze dla nieprzyzwyczajonych palców, a szerszy gryf wybacza więcej przy ustawianiu ręki. Przy klawiszach na start w zupełności wystarczy zwykły keyboard. Chętnie doradzę przed zakupem, żeby nie przepłacić.",
       },
       {
         question: "Jak wyglądają lekcje online?",
@@ -212,7 +212,7 @@ export const site = {
   },
 
   footer: {
-    tagline: "Lekcje keyboardu i gitary dla dorosłych — stacjonarnie i online.",
+    tagline: "Lekcje gitary i keyboardu dla dorosłych — stacjonarnie i online.",
     // Miejsce na przyszłe dokumenty. Na teraz puste: Umami jest bezcookie'owe,
     // strona nie zbiera danych, więc banner ani polityka nie są wymagane.
     legalLinks: [] as { label: string; href: string }[],
