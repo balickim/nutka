@@ -1,0 +1,9 @@
+{
+  "files": {},
+  "limits": {
+    "ccn": 10,
+    "nloc": 250
+  },
+  "tool": "lizard==1.24.0",
+  "version": 1
+}

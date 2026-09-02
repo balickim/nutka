@@ -5,6 +5,10 @@ dist-print/
 .astro/
 .vite/
 coverage/
+test-results/
+playwright-report/
+__pycache__/
+*.py[cod]
 .DS_Store
 .conductor/settings.local.toml
 
