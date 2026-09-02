@@ -39,11 +39,19 @@ When instructions overlap, follow this order:
 - Persist datetime values as UTC instants by default; convert to marina/user-local dates or times only at UI/read boundaries.
 - If you find a touched persistence path storing dates or datetimes in a non-UTC form without an explicit constitution-backed exception, flag it as a finding and align it if the task scope allows.
 
+## Code Budgets
+
+- Apply these budgets to hand-written, non-test JavaScript, TypeScript, and Go.
+- Keep cyclomatic complexity (CCN) at 10 or less per function.
+- Keep NLOC at 250 or less per file.
+- Do not increase an existing baseline or raise a budget.
+
 ## Verification
 
 - After each batch of backend changes, run a backend build to catch compile errors.
 - After UI changes, run the most relevant tests or checks for the touched area.
 - Do not finish a change with broken types, failing builds, or stale constitutions.
+- Run `./tools/code_quality/check.py check` after changing hand-written, non-test JavaScript, TypeScript, or Go.
 - `pnpm audit --audit-level=high --prod` must pass with zero advisories. The `Frontend Build` CI check enforces this on every PR. When adding or updating dependencies, run the audit locally first and resolve any high/critical findings before pushing.
 
 ## Code Review Graph (MCP)
