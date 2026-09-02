@@ -1,9 +1,11 @@
 ---
 import { site } from "../data/site";
 import { config } from "../data/config";
+import { sitePath } from "../data/urls";
 
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? config.appUrlFallback;
 const year = new Date().getFullYear();
+const nav = site.nav.map((item) => ({ ...item, href: sitePath(item.href) }));
 ---
 
 <footer class="border-t border-line">
@@ -28,7 +30,7 @@ const year = new Date().getFullYear();
     <div>
       <p class="eyebrow">Strona</p>
       <ul class="mt-4 space-y-2 text-muted">
-        {site.nav.map((item) => <li><a href={item.href} class="hover:text-ink">{item.label}</a></li>)}
+        {nav.map((item) => <li><a href={item.href} class="hover:text-ink">{item.label}</a></li>)}
         <li><a href={appUrl} class="hover:text-ink">Zaloguj się</a></li>
       </ul>
     </div>

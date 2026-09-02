@@ -10,7 +10,9 @@ interface Props {
 const { title = site.meta.title, description = site.meta.description } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL(site.meta.ogImage, Astro.site);
+const baseUrl = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const assetUrl = new URL(`${baseUrl}${site.meta.ogImage}`, Astro.site);
+const faviconUrl = new URL(`${baseUrl}favicon.svg`, Astro.site);
 
 // Umami jest bezcookie'owe, więc nie wymaga bannera zgody.
 // Skrypt renderuje się wyłącznie wtedy, gdy obie zmienne są ustawione — lokalnie nie zbieramy niczego.
@@ -23,7 +25,7 @@ const structuredData = {
   name: site.teacherName,
   description: site.meta.description,
   url: canonical.origin,
-  image: ogImage.href,
+  image: assetUrl.href,
   telephone: site.contact.phone,
   email: site.contact.email,
   areaServed: site.contact.city,
@@ -50,7 +52,7 @@ const structuredData = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={faviconUrl} type="image/svg+xml" />
 
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pl_PL" />
@@ -58,11 +60,11 @@ const structuredData = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical.href} />
-    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image" content={assetUrl.href} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage.href} />
+    <meta name="twitter:image" content={assetUrl.href} />
 
     <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
 

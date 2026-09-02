@@ -31,7 +31,7 @@ export const site = {
     title: `${teacherName} — lekcje gitary i keyboardu dla dorosłych`,
     description:
       "Lekcje gitary i keyboardu dla dorosłych, którzy chcą grać dla własnej przyjemności. Bez egzaminów, ocen i presji, stacjonarnie i online. Umów lekcję próbną.",
-    ogImage: "/og.png",
+    ogImage: "og.png",
   },
 
   contact: {

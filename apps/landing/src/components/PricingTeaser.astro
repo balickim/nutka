@@ -1,5 +1,6 @@
 ---
 import { site } from "../data/site";
+import { sitePath } from "../data/urls";
 
 const { pricing } = site;
 ---
@@ -17,7 +18,7 @@ const { pricing } = site;
       <p class="mt-4 max-w-md leading-relaxed text-muted">{pricing.teaserNote}</p>
     </div>
 
-    <a href="/cennik" class="btn btn-accent justify-self-start lg:justify-self-end">
+    <a href={sitePath("/cennik")} class="btn btn-accent justify-self-start lg:justify-self-end">
       {pricing.ctaLabel}
       <span aria-hidden="true">→</span>
     </a>

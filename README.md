@@ -40,8 +40,12 @@ Optional environment variables for the landing page:
   both are set, so local and preview builds stay tracking-free. Umami is cookieless, so no consent
   banner is required.
 
-Before going live, set the real domain in `apps/landing/src/data/config.ts` (`siteUrl`) and in
-`apps/landing/public/robots.txt`; the sitemap is generated from it.
+The temporary GitHub Pages deployment URL is configured in `apps/landing/src/data/config.ts`.
+The sitemap and QR code are generated from it. When a real domain is selected, update `siteUrl`
+and add a matching `CNAME` file under `apps/landing/public/`.
+
+GitHub Pages deployment is configured in `.github/workflows/deploy.yml`. In the repository's
+Settings → Pages, choose **GitHub Actions** as the source.
 
 ## Useful commands
 
