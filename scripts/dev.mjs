@@ -32,7 +32,8 @@ const { result } = concurrently(
       prefixColor: "magenta",
       env: {
         ...process.env,
-        VITE_API_URL: backendUrl,
+        VITE_API_URL: "/",
+        VITE_DEV_API_TARGET: backendUrl,
         VITE_LANDING_URL: `http://${host}:${ports.landing}`,
       },
     },

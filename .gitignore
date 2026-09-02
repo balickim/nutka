@@ -5,6 +5,8 @@ dist-print/
 .astro/
 .vite/
 coverage/
+test-results/
+playwright-report/
 .DS_Store
 .conductor/settings.local.toml
 
