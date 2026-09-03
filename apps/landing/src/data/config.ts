@@ -8,7 +8,7 @@ export const config = {
   // Tymczasowy adres GitHub Pages. Zmień po wybraniu docelowej domeny.
   siteUrl: "https://balickim.github.io/nutka",
   appUrlFallback: "http://127.0.0.1:5173",
-  teacherName: "Dominika Łuczyszyn",
+  teacherName: "Dominika",
 
   contact: {
     phone: "TODO: numer telefonu",
@@ -35,19 +35,17 @@ export const config = {
   },
 
   pricing: {
-    from: "TODO: cena",
+    from: "50 zł",
     items: [
-      { name: "Lekcja próbna", detail: "45 minut, stacjonarnie lub online", price: "TODO: cena" },
-      { name: "Lekcja 60 minut", detail: "Stacjonarnie", price: "TODO: cena" },
-      { name: "Lekcja 45 minut", detail: "Stacjonarnie", price: "TODO: cena" },
-      { name: "Lekcja 60 minut", detail: "Online", price: "TODO: cena" },
-      { name: "Pakiet 4 lekcji", detail: "Rozliczany z góry, ważny przez miesiąc", price: "TODO: cena" },
+      { name: "Bezpłatne spotkanie próbne", detail: "45 minut, bez zobowiązania", price: "0 zł" },
+      { name: "Plan Regularny", detail: "Stały dzień i godzina, raz w tygodniu", price: "50 zł / 45 min" },
+      { name: "Pakiet 4 zajęć", detail: "Ważny 60 dni, 65 zł za zajęcia", price: "260 zł" },
+      { name: "Pojedyncza lekcja", detail: "Termin ustalany indywidualnie", price: "80 zł / 45 min" },
     ] as PriceItem[],
     rules: [
-      "TODO: zasady odwoływania lekcji — do ilu godzin przed zajęciami i ile odwołań bez opłaty.",
-      "TODO: forma płatności — gotówka, przelew, termin rozliczenia.",
-      "TODO: czy jest dojazd do ucznia i w jakich okolicach.",
+      "Plan Regularny opłacasz miesięcznie z góry, do 5. dnia miesiąca — kwota zależy od liczby zajęć w danym miesiącu.",
+      "Pakiet 4 zajęć opłacasz z góry w całości. Jest ważny 60 dni od zakupu, a niewykorzystane zajęcia po tym czasie przepadają.",
+      "Zajęcia przekładasz i odwołujesz bezpłatnie najpóźniej 24 godziny wcześniej. W Planie Regularnym masz jedno bezpłatne przełożenie w każdym miesiącu i dwa bezpłatne odwołania w okresie umowy.",
     ],
   },
-
 } as const;
