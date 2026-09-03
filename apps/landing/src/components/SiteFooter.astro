@@ -6,6 +6,7 @@ import { sitePath } from "../data/urls";
 const appUrl = import.meta.env.PUBLIC_APP_URL ?? config.appUrlFallback;
 const year = new Date().getFullYear();
 const nav = site.nav.map((item) => ({ ...item, href: sitePath(item.href) }));
+const legalLinks = site.footer.legalLinks.map((link) => ({ ...link, href: sitePath(link.href) }));
 ---
 
 <footer class="border-t border-line">
@@ -39,9 +40,9 @@ const nav = site.nav.map((item) => ({ ...item, href: sitePath(item.href) }));
   <div class="container-x flex flex-wrap items-center justify-between gap-3 border-t border-line py-6 text-sm text-muted">
     <p>© {year} {site.teacherName}</p>
     {
-      site.footer.legalLinks.length > 0 && (
+      legalLinks.length > 0 && (
         <ul class="flex flex-wrap gap-5">
-          {site.footer.legalLinks.map((link) => (
+          {legalLinks.map((link) => (
             <li>
               <a href={link.href} class="hover:text-ink">
                 {link.label}

@@ -157,8 +157,8 @@ export const site = {
     eyebrow: "Cennik",
     title: "Jasne stawki, bez ukrytych kosztów.",
     from: config.pricing.from,
-    fromUnit: "za 60 minut",
-    teaserNote: "Lekcja próbna jest krótsza i tańsza — sprawdzasz bez zobowiązań.",
+    fromUnit: "za 45 minut",
+    teaserNote: "Pierwsze spotkanie próbne jest bezpłatne — sprawdzasz bez zobowiązań.",
     ctaLabel: "Zobacz pełny cennik",
     items: config.pricing.items,
     rules: config.pricing.rules,
@@ -200,7 +200,8 @@ export const site = {
       },
       {
         question: "Co, jeśli muszę odwołać lekcję?",
-        answer: "TODO: zasady odwoływania lekcji.",
+        answer:
+          "Wystarczy dać znać najpóźniej 24 godziny wcześniej — wtedy przekładamy albo odwołujemy zajęcia bez opłaty. W Planie Regularnym masz jedno bezpłatne przełożenie w miesiącu i dwa bezpłatne odwołania w okresie umowy. Szczegóły są w regulaminie.",
       },
     ],
   },
@@ -213,9 +214,12 @@ export const site = {
 
   footer: {
     tagline: "Lekcje gitary i keyboardu dla dorosłych — stacjonarnie i online.",
-    // Miejsce na przyszłe dokumenty. Na teraz puste: Umami jest bezcookie'owe,
-    // strona nie zbiera danych, więc banner ani polityka nie są wymagane.
-    legalLinks: [] as { label: string; href: string }[],
+    // Umami jest bezcookie'owe i strona nie zbiera danych, więc banner ani
+    // polityka prywatności nie są wymagane. Regulamin zajęć jest tu jako PDF.
+    legalLinks: [{ label: "Regulamin zajęć (PDF)", href: "/regulamin.pdf" }] as {
+      label: string;
+      href: string;
+    }[],
   },
 } as const;
 

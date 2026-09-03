@@ -20,8 +20,8 @@ const description =
       <p class="eyebrow">{pricing.eyebrow}</p>
       <h1 class="mt-4 max-w-3xl text-[clamp(2.4rem,6vw,4rem)]">{pricing.title}</h1>
       <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-        Wszystkie stawki dotyczą lekcji indywidualnych. Pierwsza lekcja jest krótsza i tańsza — sprawdzasz
-        bez zobowiązania na dalsze zajęcia.
+        Wszystkie stawki dotyczą zajęć indywidualnych trwających 45 minut. Pierwsze spotkanie próbne jest
+        bezpłatne i nie zobowiązuje do dalszych zajęć.
       </p>
     </section>
 
@@ -53,6 +53,11 @@ const description =
               ))
             }
           </ul>
+          <p class="mt-6">
+            <a href={sitePath("/regulamin.pdf")} class="font-semibold underline-offset-4 hover:underline">
+              Pełny regulamin zajęć (PDF)
+            </a>
+          </p>
         </div>
 
         <div class="rounded-block bg-ink p-8 text-cream">
