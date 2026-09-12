@@ -5,8 +5,8 @@ Release notes must name things the way the UI names them. A reader who sees
 
 ## Method
 
-1. Find the module's locale namespace: `translation.<module>.*` mirrors
-   `sailormoon.ui/src/modules/<module>/`.
+1. Find the module's locale namespace: `translation.<module>.*` mirrors the
+   module's source directory.
 2. Dump the module's own keys, plus its `menu.*` entry for the canonical module name:
    ```bash
    $SKILL/scripts/locale-terms.py pl_PL '^translation\.invoices\.handoffs\.'
@@ -39,7 +39,7 @@ Release notes must name things the way the UI names them. A reader who sees
 | customer wizard | **kreator klienta mariny**, CTA *Wdróż klienta* | asystent klienta |
 | marina-local time | **czas lokalny mariny** | strefa czasowa mariny |
 | amount in words | **kwota słownie** | kwota tekstem |
-| product name | **MarinaKeeper** | Sailormoon (repository only) |
+| product name | **MarinaKeeper** | repository name |
 
 Module names: *Dashboard, Armatorzy, Łodzie, Stanowiska, Mapa Mariny, Umowy, Faktury,
 Płatności, Opłaty dodatkowe, Podnajem, Powiadomienia, Szablony, Kolejka działań,

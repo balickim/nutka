@@ -7,7 +7,7 @@ Two sections shown; the real output covers every user-visible change.
 
 # MarinaKeeper v0.52.0
 
-Porównanie: [v0.51.0 → v0.52.0](https://github.com/balickim/sailormoon/compare/v0.51.0...v0.52.0)
+Porównanie wersji: v0.51.0 → v0.52.0
 
 ## Najważniejsze zmiany
 

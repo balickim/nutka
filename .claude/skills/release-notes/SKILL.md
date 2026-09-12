@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Writes human-readable, user-facing release notes for MarinaKeeper from a release-please release PR or a tag range, in any requested language, using the product's own terminology from sailormoon.ui/src/locale/*.json. Use when the user asks for release notes, changelog prose, "what shipped in this release", notes for a "chore(main): release x.y.z" PR, or a translated version of release notes.
+description: Writes human-readable, user-facing release notes for MarinaKeeper from a release-please release PR or a tag range, in any requested language, using the product's own terminology from its locale files. Use when the user asks for release notes, changelog prose, "what shipped in this release", notes for a "chore(main): release x.y.z" PR, or a translated version of release notes.
 ---
 
 # Release notes
@@ -44,7 +44,7 @@ it matters.
 
 - Lead each section with what the user can now do, then the details that follow from it.
 - Quote the actual UI string when naming a screen, tab, button, or validation message.
-- Name the product **MarinaKeeper**. `sailormoon` is the repository, never user-facing.
+- Name the product **MarinaKeeper**.
 - Cite each change as `(#<PR number>)`; keep the `v0.X.0 → v0.Y.0` compare link at the top.
 - No marketing adjectives, no "we are excited". State the change.
 - Internal refactors, code-budget baselines, and test-only changes do not get sections.

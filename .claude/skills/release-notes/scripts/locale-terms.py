@@ -4,7 +4,7 @@
 Usage:
   locale-terms.py <locale> <regex> [--values] [--limit N]
 
-  <locale>  locale code or file, e.g. pl_PL, pl, sailormoon.ui/src/locale/pl_PL.json
+  <locale>  locale code or file, e.g. pl_PL, pl, src/locale/pl_PL.json
   <regex>   case-insensitive regex matched against the flattened key path,
             or against the translated text when --values is set
 
@@ -28,7 +28,7 @@ def locale_dir() -> pathlib.Path:
         ["git", "rev-parse", "--show-toplevel"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    return pathlib.Path(root) / "sailormoon.ui/src/locale"
+    return pathlib.Path(root) / "src/locale"
 
 
 LOCALE_DIR = locale_dir()
