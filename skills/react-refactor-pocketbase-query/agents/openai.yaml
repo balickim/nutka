@@ -1,0 +1,7 @@
+interface:
+  display_name: "React Refactor PB Query"
+  short_description: "Refactor React code with strict API-hook-UI boundaries."
+  default_prompt: "Use $react-refactor-pocketbase-query to refactor this Sailormoon frontend change while preserving behavior and improving architecture."
+
+policy:
+  allow_implicit_invocation: true
