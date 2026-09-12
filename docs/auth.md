@@ -9,8 +9,6 @@ server-managed cookie session and an in-memory frontend auth state.
 - The auth realm is the closed `learners` PocketBase auth collection.
 - Learner accounts are invite-only. Until invitation delivery exists, the
   development seed command is the only supported provisioning path.
-- Learner auth is separate from any Sailormoon realm or PocketBase `users` and
-  `owner_users` records. No records are imported between realms.
 - Only verified learners may create a session.
 
 ## HTTP API

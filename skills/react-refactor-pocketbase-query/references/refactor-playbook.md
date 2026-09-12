@@ -1,14 +1,14 @@
 # Refactor Playbook
 
-Use this playbook when editing frontend code in `sailormoon.ui`.
+Use this playbook when editing frontend code in `src`.
 
 ## 1. Quick Discovery
 
 Run targeted scans for touched scope:
 
 ```sh
-rg -n "pb\\.collection\\(|pb\\.send\\(|fetch\\(|axios\\(" sailormoon.ui/src
-rg -n "useQuery\\(|useMutation\\(" sailormoon.ui/src/modules sailormoon.ui/src/pages
+rg -n "pb\\.collection\\(|pb\\.send\\(|fetch\\(|axios\\(" src
+rg -n "useQuery\\(|useMutation\\(" src/modules src/pages
 ```
 
 ## 2. Move Network Calls to API Services
@@ -69,6 +69,6 @@ Preferred naming shape:
 ## 8. Verification
 
 Run the most relevant checks for changed scope:
-1. `pnpm -C sailormoon.ui lint`
-2. `pnpm -C sailormoon.ui build`
+1. `pnpm lint`
+2. `pnpm build`
 3. Targeted tests for touched modules (unit/e2e as appropriate)

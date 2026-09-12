@@ -1,11 +1,11 @@
 ---
 name: react-refactor-pocketbase-query
-description: Refactor Sailormoon React/TypeScript code toward loose coupling and composability with class-based API services, module hooks, standardized TanStack Query keys, and PocketBase network access only in src/api.
+description: Refactor React/TypeScript code toward loose coupling and composability with class-based API services, module hooks, standardized TanStack Query keys, and PocketBase network access only in src/api.
 ---
 
 # React Refactor PocketBase Query
 
-Use this skill when working on `sailormoon.ui` React/TypeScript code that should be maintainable, loosely coupled, and consistent with the repository architecture.
+Use this skill when working on React/TypeScript code that should be maintainable, loosely coupled, and consistent with the repository architecture.
 
 ## Load Minimum Context First
 
