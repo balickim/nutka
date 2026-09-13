@@ -23,14 +23,14 @@ export interface PriceItem {
 }
 
 const teacherName = config.teacherName;
+const city = config.contact.city;
 
 export const site = {
   teacherName,
 
   meta: {
-    title: `${teacherName} — lekcje gitary i keyboardu dla dorosłych`,
-    description:
-      "Lekcje gitary i keyboardu dla dorosłych, którzy chcą grać dla własnej przyjemności. Bez egzaminów, ocen i presji, stacjonarnie i online. Umów lekcję próbną.",
+    title: `${teacherName} — lekcje gitary i keyboardu dla dorosłych · ${city}`,
+    description: `Indywidualne lekcje gitary i keyboardu dla dorosłych i seniorów — ${city}. Zajęcia stacjonarne, 45 minut, bez egzaminów i ocen. Pierwsza lekcja próbna jest bezpłatna.`,
     ogImage: "og.png",
   },
 
@@ -46,28 +46,35 @@ export const site = {
   ],
 
   hero: {
-    eyebrow: "Gitara i keyboard · stacjonarnie i online",
-    title: "To nie jest szkoła muzyczna.",
-    titleAccent: "Tu grasz dla siebie.",
-    lede: "Bez egzaminów, ocen i presji. Uczę dorosłych, którzy chcą grać dla własnej przyjemności — w swoim tempie i na swoich warunkach.",
-    ctaPrimary: "Umów lekcję próbną",
+    eyebrow: `Prywatne lekcje gitary i keyboardu · ${city}`,
+    title: "Nauka gry na gitarze i keyboardzie",
+    titleAccent: "dla dorosłych, od zera.",
+    lede: "Indywidualne lekcje w mojej pracowni. Uczę dorosłych i seniorów, którzy chcą grać dla własnej przyjemności — bez egzaminów, ocen i presji, w swoim tempie.",
+    // Fakty zamykają pytanie „czy to dla mnie i na jakich warunkach” bez przewijania strony.
+    facts: [
+      { label: "Dla kogo", value: "Dorośli i seniorzy, od zera lub po przerwie" },
+      { label: "Forma", value: "Lekcje indywidualne, 45 minut" },
+      { label: "Gdzie", value: `Stacjonarnie, ${city}` },
+      { label: "Ile", value: `Od ${config.pricing.from} · lekcja próbna 0 zł` },
+    ],
+    ctaPrimary: "Umów bezpłatną lekcję próbną",
     ctaSecondary: "Zobacz, jak zacząć",
     photo: config.photos.hero,
   },
 
   objections: {
     eyebrow: "Trzy rzeczy, które zwykle zatrzymują",
-    title: "Nic z tego nie jest przeszkodą.",
+    title: "To nie jest szkoła muzyczna.",
     items: [
       {
         claim: "„Jestem za stary, żeby zaczynać”",
         answer:
-          "Dorosły uczeń ma przewagę, o której rzadko się mówi: wie, po co tu jest. Sam wybiera utwory, rozumie, co ćwiczy, i nie musi nikomu niczego udowadniać.",
+          "Dorosły uczeń ma przewagę, o której rzadko się mówi: wie, po co tu jest. Sam wybiera utwory i rozumie, co ćwiczy. Uczę dorosłych i seniorów — pierwszy kontakt z instrumentem na emeryturze to normalny start, a nie wyjątek.",
       },
       {
         claim: "„Nie mam talentu”",
         answer:
-          "Gra na instrumencie to zestaw umiejętności, które da się rozłożyć na małe kroki i przejść po kolei. Talent przyspiesza pierwszy miesiąc, a nie decyduje o całej reszcie.",
+          "Gra na instrumencie to zestaw umiejętności, które da się rozłożyć na małe kroki i przejść po kolei. Najwięcej zależy od tego, ile ćwiczysz między lekcjami — talent przyspiesza początki nauki, a nie całą resztę.",
       },
       {
         claim: "„Nie mam czasu ćwiczyć”",
@@ -94,7 +101,6 @@ export const site = {
           "Od pierwszego akordu po utwór, który chodzi Ci po głowie od lat. Klasyka, pop, muzyka filmowa — repertuar wybieramy razem. Do ćwiczeń w domu keyboard w zupełności wystarczy.",
       },
     ],
-    modes: ["Stacjonarnie", "Online", "Dla początkujących", "Dla powracających"],
   },
 
   about: {
@@ -126,7 +132,7 @@ export const site = {
       },
       {
         name: "Ruszamy w Twoim tempie",
-        description: "Dostajesz plan i materiały do ćwiczeń, a terminy dopasowujemy do Twojego tygodnia.",
+        description: "Plan i materiały do ćwiczeń czekają na Twoim profilu, a terminy dopasowujemy do Twojego tygodnia.",
       },
     ],
   },
@@ -136,9 +142,10 @@ export const site = {
     badge: "W przygotowaniu",
     eyebrow: "Aplikacja dla uczniów",
     title: "Wszystko z lekcji w jednym miejscu.",
-    lede: "Powstaje aplikacja, która ma domykać to, co dzieje się między zajęciami.",
+    lede: "Po lekcji materiały czekają na Twoim profilu — nagrania, nuty i plan na najbliższy tydzień.",
+    ctaLabel: "Zaloguj się do aplikacji",
     features: [
-      { name: "Nagrania", description: "Wracasz do materiału z lekcji, kiedy tylko chcesz." },
+      { name: "Nagrania i nuty", description: "Wracasz do materiału z lekcji, kiedy tylko chcesz." },
       { name: "Zadania", description: "Wiesz dokładnie, co ćwiczyć w danym tygodniu." },
       { name: "Terminy", description: "Umawiasz i przekładasz zajęcia bez dzwonienia." },
     ],
@@ -158,7 +165,7 @@ export const site = {
     title: "Jasne stawki, bez ukrytych kosztów.",
     from: config.pricing.from,
     fromUnit: "za 45 minut",
-    teaserNote: "Pierwsze spotkanie próbne jest bezpłatne — sprawdzasz bez zobowiązań.",
+    teaserNote: "Pierwsza lekcja próbna jest bezpłatna — sprawdzasz bez zobowiązań.",
     ctaLabel: "Zobacz pełny cennik",
     items: config.pricing.items,
     rules: config.pricing.rules,
@@ -168,6 +175,10 @@ export const site = {
     eyebrow: "FAQ",
     title: "Pytania, które padają najczęściej.",
     items: [
+      {
+        question: "Gdzie odbywają się lekcje?",
+        answer: `Lekcje odbywają się stacjonarnie w mojej pracowni: ${config.contact.address}, ${city}. Zajęcia prowadzę wyłącznie na miejscu — przy nauce gry wiele rzeczy, jak ustawienie ręki, poprawia się dopiero przy instrumencie.`,
+      },
       {
         question: "Czy uczysz też dzieci?",
         answer:
@@ -179,11 +190,6 @@ export const site = {
           "Na pierwszą lekcję instrument nie jest potrzebny, ale do ćwiczenia w domu już tak. Przy gitarze początkującym polecam klasyczną: nylonowe struny są łagodniejsze dla nieprzyzwyczajonych palców, a szerszy gryf wybacza więcej przy ustawianiu ręki. Przy klawiszach na start w zupełności wystarczy zwykły keyboard. Chętnie doradzę przed zakupem, żeby nie przepłacić.",
       },
       {
-        question: "Jak wyglądają lekcje online?",
-        answer:
-          "Tak samo jak stacjonarne, tylko przez kamerę. Potrzebujesz telefonu albo laptopa i ustawienia kamery tak, żeby było widać ręce i instrument.",
-      },
-      {
         question: "Czy muszę znać nuty?",
         answer:
           "Nie. Nut uczysz się w takim zakresie, w jakim są Ci realnie potrzebne do grania. Można też pracować na akordach i tabulaturach.",
@@ -191,7 +197,7 @@ export const site = {
       {
         question: "Skąd biorę nuty do ćwiczenia?",
         answer:
-          "Do każdego utworu przygotowuję własne opracowanie nut i akordów, dopasowane do poziomu konkretnego ucznia. Zamiast szukać wersji, którą da się zagrać, dostajesz zapis pisany pod Twoje możliwości — a przy kolejnych podejściach ten sam utwór wraca w trudniejszej wersji.",
+          "Do każdego utworu przygotowuję własne opracowanie nut i akordów, dopasowane do poziomu konkretnego ucznia. Zamiast szukać wersji, którą da się zagrać, dostajesz zapis pisany pod Twoje możliwości — a przy kolejnych podejściach ten sam utwór wraca w trudniejszej wersji. Opracowanie razem z nagraniem z lekcji trafia na Twój profil w aplikacji.",
       },
       {
         question: "Jak często odbywają się lekcje?",
@@ -213,7 +219,7 @@ export const site = {
   },
 
   footer: {
-    tagline: "Lekcje gitary i keyboardu dla dorosłych — stacjonarnie i online.",
+    tagline: `Indywidualne lekcje gitary i keyboardu dla dorosłych i seniorów. Stacjonarnie, ${city}.`,
     // Umami jest bezcookie'owe i strona nie zbiera danych, więc banner ani
     // polityka prywatności nie są wymagane. Regulamin zajęć jest tu jako PDF.
     legalLinks: [{ label: "Regulamin zajęć (PDF)", href: "/regulamin.pdf" }] as {

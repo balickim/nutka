@@ -11,13 +11,13 @@ export const config = {
   teacherName: "Dominika",
 
   contact: {
-    phone: "TODO: numer telefonu",
-    phoneHref: "tel:+48000000000",
-    email: "TODO: adres e-mail",
-    emailHref: "mailto:kontakt@example.com",
-    whatsappHref: "https://wa.me/48000000000",
-    city: "TODO: miasto",
-    address: "TODO: adres pracowni",
+    phone: "721 497 150",
+    phoneHref: "tel:+48721497150",
+    email: "dominika7928@gmail.com",
+    emailHref: "mailto:dominika7928@gmail.com",
+    whatsappHref: "https://wa.me/48721497150",
+    city: "Szczecin",
+    address: "ul. 26 Kwietnia",
   },
 
   photos: {
@@ -26,7 +26,7 @@ export const config = {
   },
 
   app: {
-    available: false,
+    available: true,
   },
 
   testimonials: {
@@ -37,7 +37,7 @@ export const config = {
   pricing: {
     from: "50 zł",
     items: [
-      { name: "Bezpłatne spotkanie próbne", detail: "45 minut, bez zobowiązania", price: "0 zł" },
+      { name: "Bezpłatna lekcja próbna", detail: "45 minut, bez zobowiązania", price: "0 zł" },
       { name: "Plan Regularny", detail: "Stały dzień i godzina, raz w tygodniu", price: "50 zł / 45 min" },
       { name: "Pakiet 4 zajęć", detail: "Ważny 60 dni, 65 zł za zajęcia", price: "260 zł" },
       { name: "Pojedyncza lekcja", detail: "Termin ustalany indywidualnie", price: "80 zł / 45 min" },

@@ -1,7 +1,10 @@
 ---
+/** Sekcja o aplikacji dla uczniów: pokazuje, co dzieje się z materiałami między lekcjami. */
 import { site } from "../data/site";
+import { config } from "../data/config";
 
 const { app } = site;
+const appUrl = import.meta.env.PUBLIC_APP_URL ?? config.appUrlFallback;
 ---
 
 <section class="container-x section reveal">
@@ -30,5 +33,7 @@ const { app } = site;
         ))
       }
     </ul>
+
+    {app.available && <a href={appUrl} class="btn btn-primary mt-10">{app.ctaLabel}</a>}
   </div>
 </section>
