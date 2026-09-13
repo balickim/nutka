@@ -29,7 +29,7 @@ describe("auth helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
     await logout();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/auth/logout",
+      "/api/learners/auth/logout",
       expect.objectContaining({ method: "POST", credentials: "include" }),
     );
     expect(getAuthState().record).toBeNull();

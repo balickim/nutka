@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSafeRedirect } from "./redirect";
+import { getPersonaRedirect, getSafeRedirect } from "./redirect";
 
 describe("getSafeRedirect", () => {
   it("accepts a same-origin path with query and hash", () => {
@@ -13,5 +13,10 @@ describe("getSafeRedirect", () => {
   it("rejects missing and backslash redirects", () => {
     expect(getSafeRedirect(undefined)).toBe("/");
     expect(getSafeRedirect("/\\evil.example")).toBe("/");
+  });
+  it("keeps post-login redirects inside the matching persona route tree", () => {
+    expect(getPersonaRedirect("/teachers/availability", "teacher")).toBe("/teachers/availability");
+    expect(getPersonaRedirect("/learners/calendar", "teacher")).toBe("/teachers");
+    expect(getPersonaRedirect("/teachers", "learner")).toBe("/learners/calendar");
   });
 });

@@ -1,3 +1,5 @@
+// Defines persona-isolated route spaces and guards each protected panel with its matching session store.
+
 import {
   Outlet,
   createRootRoute,
@@ -6,36 +8,89 @@ import {
   redirect,
 } from "@tanstack/react-router";
 
-import { bootstrapAuth } from "./auth/auth";
-import { HomeView } from "./views/HomeView";
+import { bootstrapAuth as bootstrapLearner } from "./auth/auth";
+import { bootstrapAuth as bootstrapTeacher } from "./auth/teacher";
+import { getPersonaRedirect } from "./auth/redirect";
+import { updateDocumentTitle } from "./document/title";
 import { LoginView } from "./views/LoginView";
+import { HomeView } from "./views/HomeView";
+import { PersonaEntryView } from "./views/PersonaEntryView";
+import { TeacherView } from "./views/TeacherView";
 
 const rootRoute = createRootRoute({ component: () => <Outlet /> });
-const loginRoute = createRoute({
+const learnerLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/login",
+  path: "/learners/login",
   beforeLoad: async () => {
-    const result = await bootstrapAuth();
-    if (result.kind === "authenticated") throw redirect({ to: "/" });
+    const result = await bootstrapLearner();
+    if (result.kind === "authenticated") throw redirect({ to: "/learners/calendar" });
   },
-  component: LoginView,
+  component: () => <LoginView realm="learner" />,
 });
-const homeRoute = createRoute({
+const learnerCalendarRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/",
+  path: "/learners/calendar",
   beforeLoad: async ({ location }) => {
-    const result = await bootstrapAuth();
+    const result = await bootstrapLearner();
     if (result.kind === "unauthenticated") {
       throw redirect({
-        to: "/login",
-        search: { redirect: location.href },
+        to: "/learners/login",
+        search: { redirect: getPersonaRedirect(location.href, "learner") },
       });
     }
   },
   component: HomeView,
 });
-const routeTree = rootRoute.addChildren([loginRoute, homeRoute]);
+const teacherLoginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/login",
+  beforeLoad: async () => {
+    const result = await bootstrapTeacher();
+    if (result.kind === "authenticated") throw redirect({ to: "/teachers" });
+  },
+  component: () => <LoginView realm="teacher" />,
+});
+const teacherRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers",
+  beforeLoad: async ({ location }) => {
+    const result = await bootstrapTeacher();
+    if (result.kind === "unauthenticated") {
+      throw redirect({
+        to: "/teachers/login",
+        search: { redirect: getPersonaRedirect(location.href, "teacher") },
+      });
+    }
+  },
+  component: TeacherView,
+});
+const teacherAvailabilityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/availability",
+  beforeLoad: async ({ location }) => {
+    const result = await bootstrapTeacher();
+    if (result.kind === "unauthenticated") {
+      throw redirect({
+        to: "/teachers/login",
+        search: { redirect: getPersonaRedirect(location.href, "teacher") },
+      });
+    }
+  },
+  component: () => <TeacherView availability />,
+});
+const entryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: PersonaEntryView });
+const routeTree = rootRoute.addChildren([
+  entryRoute,
+  learnerLoginRoute,
+  learnerCalendarRoute,
+  teacherLoginRoute,
+  teacherRoute,
+  teacherAvailabilityRoute,
+]);
+
 export const router = createRouter({ routeTree, defaultPreload: "intent" });
+updateDocumentTitle(router.state.location.pathname);
+router.subscribe("onResolved", () => updateDocumentTitle(router.state.location.pathname));
 
 declare module "@tanstack/react-router" {
   interface Register { router: typeof router; }

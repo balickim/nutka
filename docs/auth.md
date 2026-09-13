@@ -1,105 +1,105 @@
 # Nutka authentication contract
 
-This document is the canonical contract for learner authentication. It covers the
-first milestone only: the Nutka learner realm backed by PocketBase, with a
-server-managed cookie session and an in-memory frontend auth state.
+This document defines the closed teacher and learner authentication realms.
+PocketBase stores both realms and the server manages browser sessions.
 
 ## Scope
 
-- The auth realm is the closed `learners` PocketBase auth collection.
-- Learner accounts are invite-only. Until invitation delivery exists, the
-  development seed command is the only supported provisioning path.
-- Only verified learners may create a session.
+- The `teachers` and `learners` auth collections are separate realms.
+- Existing custom `users` records migrate to `teachers` with identifiers and credentials preserved.
+- Verified accounts and development seed commands are the only session sources.
+- Public registration, invitations, password reset, MFA, and account import are unavailable.
 
 ## HTTP API
 
-The browser uses relative `/api` URLs. Requests that participate in the auth
-flow include `credentials: "include"` and the intent header
-`X-Requested-With: fetch`.
+The browser uses relative `/api` URLs with `credentials: "include"`.
+Browser auth mutations send `X-Requested-With: fetch`.
 
 | Method | Path | Contract |
 | --- | --- | --- |
-| `POST` | `/api/collections/learners/auth-with-password` | Accepts the learner identity and password. Requires `X-Requested-With: fetch`. A successful, verified authentication sets the session cookie and returns the learner record without an auth token. Invalid or unverified credentials do not issue a session cookie. |
-| `GET` | `/api/auth/me` | Reads the Nutka session and returns `{ "record": <learner>, "session_expires_at": <timestamp>? }`. Missing, expired, or wrong-realm sessions return `401` and clear the session cookie. |
-| `POST` | `/api/auth/logout` | Clears the Nutka session cookie and returns `{ "status": "ok" }`. Logout is idempotent and requires the auth intent header. |
+| `POST` | `/api/collections/teachers/auth-with-password` | Authenticates a verified teacher and sets the teacher session cookie. |
+| `POST` | `/api/collections/learners/auth-with-password` | Authenticates a verified learner and sets the learner session cookie. |
+| `GET` | `/api/teachers/auth/me` | Reads only the teacher session and returns `{ "record": <teacher>, "session_expires_at": <timestamp>? }`. |
+| `GET` | `/api/learners/auth/me` | Reads only the learner session and returns `{ "record": <learner>, "session_expires_at": <timestamp>? }`. |
+| `POST` | `/api/teachers/auth/logout` | Clears only the teacher session. The request requires the intent header. |
+| `POST` | `/api/learners/auth/logout` | Clears only the learner session. The request requires the intent header. |
 
-Native PocketBase auth refresh is not part of this contract and is rejected.
-The server strips auth tokens from authentication responses; the browser never
-needs to handle or persist a bearer token.
+Missing, expired, or wrong-realm sessions return `401` and clear only the matching cookie.
+Logout is idempotent. Legacy `/api/auth/*` routes do not exist.
 
-PocketBase superusers retain native admin-panel access to the `learners`
-collection. Deferred learner self-service routes remain hidden from guests and
-learner sessions; the session bridge runs before PocketBase auth resolution,
-and the deferred-route guard runs after it so only a resolved superuser can
-reach those native collection routes.
+Native PocketBase auth refresh is disabled for both realms.
+Native record and self-service routes remain unavailable to guests and persona sessions.
+Only PocketBase superusers may use those native routes.
 
-## Session cookie
+Authentication responses contain no bearer token.
+The server derives scheduling identity from the matching session cookie.
+Request identity fields cannot replace the resolved persona.
 
-Successful learner login sets exactly one Nutka session cookie:
+## Persona route spaces
 
-| Attribute | Required value |
+- Teacher application routes use `/teachers/*`.
+- Learner application routes use `/learners/*`.
+- `/learners` and `/learners/*` use the HTML title `nutka — przestrzeń ucznia`.
+- `/teachers` and `/teachers/*` use the HTML title `nutka — przestrzeń nauczyciela`.
+- Other application routes use the neutral HTML title `nutka`.
+- A teacher session cannot authorize learner routes.
+- A learner session cannot authorize teacher routes.
+- Each realm resolves only its own cookie.
+
+## Session cookies
+
+Successful login sets one cookie for the matching realm.
+
+| Realm | Name |
 | --- | --- |
-| Name | `__Host-nutka_session` |
-| `HttpOnly` | enabled |
-| `Secure` | enabled |
-| `SameSite` | `Lax` |
-| `Path` | `/` |
-| `Domain` | omitted |
-| Lifetime | 12 hours |
+| Teacher | `__Host-nutka_teacher_session` |
+| Learner | `__Host-nutka_learner_session` |
 
-The `__Host-` prefix requires `Secure`, `Path=/`, and no `Domain`. The token
-value is available only to the browser's cookie jar, not to JavaScript,
-`localStorage`, or application logs. In local development the app's Vite
-server proxies `/api` requests to the dynamic backend target, so the browser
-sees the session as same-origin.
+Each session cookie has these attributes:
 
-## Frontend lifecycle
+- `HttpOnly` is enabled.
+- `Secure` is enabled.
+- `SameSite` is `Lax`.
+- `Path` is `/`.
+- `Domain` is omitted.
+- Lifetime is 12 hours.
 
-1. A protected route performs a single-flight `/api/auth/me` bootstrap. A valid
-   response populates in-memory auth state; no token or auth record is persisted
-   to `localStorage`.
-2. A missing or expired session clears local state and sends the user to
-   `/login`. A network or 5xx bootstrap failure is retryable rather than being
-   treated as a confirmed unauthenticated session.
-3. After login, the app navigates to a validated `?redirect=` path or `/`.
-   Redirects accept only same-origin paths beginning with exactly one `/`; full
-   URLs and protocol-relative paths are rejected.
-4. Logout is best effort against the server but always clears local in-memory
-   state. Login/logout coordination between tabs may use `BroadcastChannel`,
-   but messages contain no token or learner data.
-5. The app signs out at the server-reported expiry. If login does not provide an
-   expiry, it falls back to 12 hours from successful login.
+The `__Host-` prefix requires `Secure`, `Path=/`, and no `Domain`.
+Tokens are unavailable to JavaScript, `localStorage`, and application logs.
 
-The auth intent header is required on mutation endpoints so browser auth actions
-cannot be mistaken for ordinary cross-site requests. Invalid credentials use a
-generic error and do not reveal whether an account exists.
+## Development seeds
 
-## Development seed
-
-Run this command from `apps/backend` while using a development environment:
+Run these commands from `apps/backend` in a development environment:
 
 ```sh
+NUTKA_ENV=development go run . seed-teacher \
+  --email teacher@example.test \
+  --password 'local-password' \
+  --name 'Test Teacher'
+
 NUTKA_ENV=development go run . seed-learner \
   --email learner@example.test \
   --password 'local-password' \
   --name 'Test Learner'
 ```
 
-The command creates or updates a verified local learner, never logs the supplied
-password, and is not registered outside development. It does not add a public
-registration mechanism.
+Each command creates or updates one verified local account.
+Each command rejects missing fields and never logs the supplied password.
+Neither command creates a public registration mechanism.
 
-## Deferred and out of scope
+## Frontend lifecycle
 
-This milestone deliberately does not include:
+Each protected route bootstraps its own `/api/{realm}/auth/me` request.
+The frontend stores each record in memory only.
 
-- public learner registration;
-- invitation delivery or invitation management UI;
-- password reset or account recovery;
-- MFA;
-- learner profile editing;
-- refresh-token rotation;
-- multi-language auth UI or localization infrastructure;
-- importing users from another auth realm.
+A `401` clears the matching realm state and redirects to that realm login.
+Network and `5xx` bootstrap failures remain retryable.
 
-Adding any of these requires an update to this contract before implementation.
+After login, redirects accept only same-origin paths beginning with exactly one `/`.
+Full URLs and protocol-relative paths are rejected.
+
+Logout clears matching local state even when the server request fails.
+Cross-tab messages contain event types only.
+
+The frontend signs out at the server-reported expiry.
+Without an expiry, it uses 12 hours from successful login.

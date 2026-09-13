@@ -1,25 +1,40 @@
+// Validates same-origin redirects and restricts post-login navigation to one persona route tree.
+
 const fallbackRedirect = "/";
 
-export function getSafeRedirect(rawRedirect: string | null | undefined): string {
+export type RedirectPersona = "learner" | "teacher";
+
+export function getSafeRedirect(rawRedirect: string | null | undefined, fallback = fallbackRedirect): string {
   if (!rawRedirect || !rawRedirect.startsWith("/") || rawRedirect.startsWith("//")) {
-    return fallbackRedirect;
+    return fallback;
   }
   if (/^[\u0000-\u001f\\]/.test(rawRedirect) || rawRedirect.includes("\\")) {
-    return fallbackRedirect;
+    return fallback;
   }
   try {
     const origin =
       typeof window === "undefined" ? "http://nutka.local" : window.location.origin;
     const parsed = new URL(rawRedirect, origin);
     if (parsed.origin !== origin || !parsed.pathname.startsWith("/")) {
-      return fallbackRedirect;
+      return fallback;
     }
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return fallbackRedirect;
+    return fallback;
   }
 }
 
-export function getRedirectFromLocation(search = window.location.search): string {
-  return getSafeRedirect(new URLSearchParams(search).get("redirect"));
+export function getPersonaRedirect(
+  rawRedirect: string | null | undefined,
+  persona: RedirectPersona,
+): string {
+  const root = persona === "learner" ? "/learners" : "/teachers";
+  const fallback = persona === "learner" ? "/learners/calendar" : "/teachers";
+  const candidate = getSafeRedirect(rawRedirect, fallback);
+  try {
+    const pathname = new URL(candidate, "http://nutka.local").pathname;
+    return pathname === root || pathname.startsWith(`${root}/`) ? candidate : fallback;
+  } catch {
+    return fallback;
+  }
 }
