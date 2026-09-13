@@ -14,13 +14,13 @@ npm install
 npm run dev
 ```
 
-Outside Conductor, the services start at:
+The services always start at the same ports, inside and outside Conductor:
 
-- Landing page: `http://127.0.0.1:4321`
-- Scheduling app: `http://127.0.0.1:5173`
-- PocketBase and API: `http://127.0.0.1:8090`
+- Landing page: `http://127.0.0.1:5321`
+- Scheduling app: `http://127.0.0.1:6173`
+- PocketBase and API: `http://127.0.0.1:9090`
 
-Inside Conductor, `CONDUCTOR_PORT` is used for the landing page and the app and backend use the next two ports, so parallel workspaces do not conflict. The app calls the API through relative `/api` URLs; the dev server proxies them to the dynamically selected backend port. This keeps browser auth cookies same-origin in local development.
+Each port is the tool's default port with its leading digit bumped by one, so Nutka never collides with an unrelated Astro, Vite, or PocketBase instance. `scripts/ports.mjs` is the single source of truth; the landing and app dev servers use `strictPort`, so a busy port fails instead of silently moving. Because the ports are fixed, only one workspace can run `npm run dev` at a time. The app calls the API through relative `/api` URLs and the dev server proxies them to the backend, which keeps browser auth cookies same-origin in local development.
 
 The PocketBase dashboard is available at `/_/` on the backend URL after its initial setup. Runtime data is intentionally local and ignored by Git.
 PocketBase also provides the API health check at `/api/health` and enables permissive development CORS by default.

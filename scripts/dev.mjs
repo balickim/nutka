@@ -1,18 +1,9 @@
 import concurrently from "concurrently";
 
-const fallbackPorts = { landing: 4321, app: 5173, backend: 8090 };
-const conductorBasePort = Number.parseInt(process.env.CONDUCTOR_PORT ?? "", 10);
-const usesConductorPorts = Number.isInteger(conductorBasePort) && conductorBasePort > 0;
-const ports = usesConductorPorts
-  ? {
-      landing: conductorBasePort,
-      app: conductorBasePort + 1,
-      backend: conductorBasePort + 2,
-    }
-  : fallbackPorts;
+import { BACKEND_URL, DEV_HOST, DEV_PORTS } from "./ports.mjs";
 
-const host = "127.0.0.1";
-const backendUrl = `http://${host}:${ports.backend}`;
+const ports = DEV_PORTS;
+const host = DEV_HOST;
 
 console.log(
   `Starting Nutka: landing ${ports.landing}, app ${ports.app}, backend ${ports.backend}`,
@@ -21,19 +12,19 @@ console.log(
 const { result } = concurrently(
   [
     {
-      command: `npm run dev --workspace=@nutka/landing -- --port ${ports.landing}`,
+      command: `npm run dev --workspace=@nutka/landing`,
       name: "landing",
       prefixColor: "cyan",
       env: { ...process.env, PUBLIC_APP_URL: `http://${host}:${ports.app}` },
     },
     {
-      command: `npm run dev --workspace=@nutka/app -- --port ${ports.app}`,
+      command: `npm run dev --workspace=@nutka/app`,
       name: "app",
       prefixColor: "magenta",
       env: {
         ...process.env,
         VITE_API_URL: "/",
-        VITE_DEV_API_TARGET: backendUrl,
+        VITE_DEV_API_TARGET: BACKEND_URL,
         VITE_LANDING_URL: `http://${host}:${ports.landing}`,
       },
     },

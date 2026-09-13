@@ -10,7 +10,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:landing": "npm run dev --workspace=@nutka/landing",
     "dev:app": "npm run dev --workspace=@nutka/app",
-    "dev:backend": "cd apps/backend && go run . serve",
+    "dev:backend": "cd apps/backend && go run . serve --http=127.0.0.1:9090",
     "flyer": "node scripts/flyer.mjs",
     "build": "npm run build --workspace=@nutka/landing && npm run build --workspace=@nutka/app",
     "check": "npm run check --workspace=@nutka/landing && npm run check --workspace=@nutka/app && cd apps/backend && go test ./..."
