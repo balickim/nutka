@@ -7,7 +7,7 @@ import type { Photo, PriceItem, Testimonial } from "./site";
 export const config = {
   // Tymczasowy adres GitHub Pages. Zmień po wybraniu docelowej domeny.
   siteUrl: "https://balickim.github.io/nutka",
-  appUrlFallback: "http://127.0.0.1:5173",
+  appUrlFallback: "http://127.0.0.1:6173",
   teacherName: "Dominika",
 
   contact: {

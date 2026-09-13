@@ -2,14 +2,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
-const devApiTarget = process.env.VITE_DEV_API_TARGET ?? "http://127.0.0.1:8090";
+import { BACKEND_URL, DEV_HOST, DEV_PORTS } from "../../scripts/ports.mjs";
+
+const devApiTarget = process.env.VITE_DEV_API_TARGET ?? BACKEND_URL;
 
 export default defineConfig({
   // The first milestone keeps its route tree explicit in src/router.tsx;
   // generation is enabled when file-based learner routes are introduced.
   plugins: [tanstackRouter({ enableRouteGeneration: false }), react()],
   server: {
-    host: "127.0.0.1",
+    host: DEV_HOST,
+    port: DEV_PORTS.app,
+    // Fail loudly instead of drifting to another port when 6173 is taken.
+    strictPort: true,
     proxy: {
       "/api": {
         target: devApiTarget,
