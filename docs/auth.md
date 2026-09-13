@@ -89,16 +89,21 @@ Neither command creates a public registration mechanism.
 
 ## Frontend lifecycle
 
-Each protected route bootstraps its own `/api/{realm}/auth/me` request.
-The frontend stores each record in memory only.
+The shared query cache is the single frontend authority for both persona sessions.
+The [frontend query state constitution](constitutions/frontend-query-state.md) defines its keys and cache rules.
 
-A `401` clears the matching realm state and redirects to that realm login.
-Network and `5xx` bootstrap failures remain retryable.
+Each realm has one session query that reads `/api/{realm}/auth/me`.
+A protected route guard and its component share that query and its in-flight request.
+The frontend keeps each record in the query cache in memory only.
+
+A `401` is unauthenticated session data and redirects to that realm login.
+Network and `5xx` session failures remain retryable and retry at most one time.
 
 After login, redirects accept only same-origin paths beginning with exactly one `/`.
 Full URLs and protocol-relative paths are rejected.
 
-Logout clears matching local state even when the server request fails.
+Login, logout, session expiry, and cross-tab logout remove only the matching realm cache.
+Logout removes that cache even when the server request fails.
 Cross-tab messages contain event types only.
 
 The frontend signs out at the server-reported expiry.

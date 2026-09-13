@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import { cancelLesson, getSchedulingErrorMessage, rescheduleLesson, type Lesson, type PersonaRole } from "../api/scheduling";
+import { useLessonWrite } from "../query/scheduling";
 import { formatScheduleInstant, localInputToUtc, utcToLocalInput } from "../time/schedule";
 
 export function ApiFeedback({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
@@ -22,17 +23,19 @@ export function lessonParticipantName(lesson: Lesson, role: PersonaRole, names: 
   return participantId.length > 12 ? `${participantId.slice(0, 7)}…${participantId.slice(-4)}` : participantId;
 }
 
-export function LessonList({ lessons, role, counterpartNames, onRefresh }: { lessons: Lesson[]; role: PersonaRole; counterpartNames?: ReadonlyMap<string, string>; onRefresh: () => Promise<void> }) {
-  const [editing, setEditing] = useState<string | null>(null); const [busy, setBusy] = useState<string | null>(null); const [error, setError] = useState<unknown>(null);
+export function LessonList({ lessons, role, counterpartNames }: { lessons: Lesson[]; role: PersonaRole; counterpartNames?: ReadonlyMap<string, string> }) {
+  const [editing, setEditing] = useState<string | null>(null); const [busy, setBusy] = useState<string | null>(null);
+  const lessonWrite = useLessonWrite();
   async function mutate(lesson: Lesson, action: "reschedule" | "cancel", start?: string, duration?: number) {
-    setBusy(lesson.id); setError(null);
-    try {
-      if (action === "cancel") await cancelLesson(role, lesson.id);
-      else await rescheduleLesson(role, lesson.id, { start_at: localInputToUtc(start || ""), ...(duration ? { duration_minutes: duration } : {}) });
-      setEditing(null); await onRefresh();
-    } catch (nextError) { setError(nextError); } finally { setBusy(null); }
+    setBusy(lesson.id);
+    const write = action === "cancel"
+      ? () => cancelLesson(role, lesson.id)
+      : () => rescheduleLesson(role, lesson.id, { start_at: localInputToUtc(start || ""), ...(duration ? { duration_minutes: duration } : {}) });
+    try { await lessonWrite.mutateAsync(write); setEditing(null); }
+    catch { /* The mutation error renders the stable Polish message. */ }
+    finally { setBusy(null); }
   }
-  return <div className="lesson-list"><ApiFeedback error={error} />{lessons.length === 0 ? <EmptyState>Nie masz jeszcze żadnych lekcji.</EmptyState> : lessons.map((lesson) => <LessonCard key={lesson.id} lesson={lesson} role={role} counterpartNames={counterpartNames} editing={editing === lesson.id} busy={busy === lesson.id} onEdit={() => setEditing(editing === lesson.id ? null : lesson.id)} onReschedule={(start, duration) => void mutate(lesson, "reschedule", start, duration)} onCancel={() => void mutate(lesson, "cancel")} />)}{!hasUpcomingLessons(lessons) && lessons.length > 0 ? <p className="supporting-copy">Brak nadchodzących lekcji. Zachowana historia pozostaje poniżej.</p> : null}</div>;
+  return <div className="lesson-list"><ApiFeedback error={lessonWrite.error} />{lessons.length === 0 ? <EmptyState>Nie masz jeszcze żadnych lekcji.</EmptyState> : lessons.map((lesson) => <LessonCard key={lesson.id} lesson={lesson} role={role} counterpartNames={counterpartNames} editing={editing === lesson.id} busy={busy === lesson.id} onEdit={() => setEditing(editing === lesson.id ? null : lesson.id)} onReschedule={(start, duration) => void mutate(lesson, "reschedule", start, duration)} onCancel={() => void mutate(lesson, "cancel")} />)}{!hasUpcomingLessons(lessons) && lessons.length > 0 ? <p className="supporting-copy">Brak nadchodzących lekcji. Zachowana historia pozostaje poniżej.</p> : null}</div>;
 }
 
 function LessonCard({ lesson, role, counterpartNames, editing, busy, onEdit, onReschedule, onCancel }: { lesson: Lesson; role: PersonaRole; counterpartNames?: ReadonlyMap<string, string>; editing: boolean; busy: boolean; onEdit: () => void; onReschedule: (start: string, duration?: number) => void; onCancel: () => void }) {
