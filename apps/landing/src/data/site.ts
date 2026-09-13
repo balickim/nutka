@@ -24,6 +24,7 @@ export interface PriceItem {
 
 const teacherName = config.teacherName;
 const city = config.contact.city;
+const cityLocative = config.contact.cityLocative;
 
 export const site = {
   teacherName,
@@ -49,7 +50,7 @@ export const site = {
     eyebrow: `Prywatne lekcje gitary i keyboardu · ${city}`,
     title: "Nauka gry na gitarze i keyboardzie",
     titleAccent: "dla dorosłych, od zera.",
-    lede: "Indywidualne lekcje w mojej pracowni. Uczę dorosłych i seniorów, którzy chcą grać dla własnej przyjemności — bez egzaminów, ocen i presji, w swoim tempie.",
+    lede: `Indywidualne lekcje stacjonarnie w ${cityLocative}. Uczę dorosłych i seniorów, którzy chcą grać dla własnej przyjemności. To nie jest szkoła muzyczna — ze mną nauczysz się grać bez egzaminów, ocen i presji, w swoim tempie.`,
     // Fakty zamykają pytanie „czy to dla mnie i na jakich warunkach” bez przewijania strony.
     facts: [
       { label: "Dla kogo", value: "Dorośli i seniorzy, od zera lub po przerwie" },
@@ -63,8 +64,7 @@ export const site = {
   },
 
   objections: {
-    eyebrow: "Trzy rzeczy, które zwykle zatrzymują",
-    title: "To nie jest szkoła muzyczna.",
+    title: "Trzy rzeczy, które zwykle zatrzymują.",
     items: [
       {
         claim: "„Jestem za stary, żeby zaczynać”",
@@ -79,7 +79,7 @@ export const site = {
       {
         claim: "„Nie mam czasu ćwiczyć”",
         answer:
-          "Kwadrans dziennie daje więcej niż trzy godziny raz w tygodniu. Plan układamy pod Twój tydzień, a nie pod wyobrażenie o tym, jak „porządnie” powinno się ćwiczyć.",
+          "Kwadrans dziennie daje więcej niż trzy godziny raz w tygodniu. Plan pracy i obszerność materiału dostosowujemy pod Twój tydzień i czas, jaki możesz poświęcić na ćwiczenie.",
       },
     ],
   },
@@ -92,13 +92,13 @@ export const site = {
         name: "Gitara klasyczna i akustyczna",
         symbol: "♫",
         description:
-          "Akordy do śpiewania w gronie znajomych, palcówki, ulubione utwory — zaczynamy od tego, co chcesz zagrać.",
+          "Od pierwszego akordu po utwór, który chodzi Ci po głowie od lat. Dążymy przede wszystkim do zagrania Twoich ulubionych utworów — na akordach, z tabulatur albo z nut. Wybór należy do Ciebie.",
       },
       {
         name: "Keyboard",
         symbol: "♪",
         description:
-          "Od pierwszego akordu po utwór, który chodzi Ci po głowie od lat. Klasyka, pop, muzyka filmowa — repertuar wybieramy razem. Do ćwiczeń w domu keyboard w zupełności wystarczy.",
+          "Od zagrania linii melodycznej po pełny aranż utworu. Klasyka, pop, muzyka filmowa — repertuar wybieramy razem, dopasowując poziom trudności do Twoich umiejętności gry.",
       },
     ],
   },
@@ -107,7 +107,7 @@ export const site = {
     eyebrow: "O mnie",
     title: "Uczę tak, żeby chciało się wrócić do instrumentu w kolejnym tygodniu.",
     paragraphs: [
-      "Od wielu lat uczę gry na gitarze i keyboardzie — dzieci i dorosłych. Praca z dziećmi nauczyła mnie rozkładania trudnych rzeczy na najmniejsze możliwe kroki. Praca z dorosłymi — tego, że o powodzeniu decyduje nie talent, tylko to, czy lekcja daje frajdę.",
+      "Mam kilkuletnie doświadczenie w nauce gry na instrumentach dzieci i dorosłych. Praca z dziećmi nauczyła mnie rozkładania trudnych rzeczy na najmniejsze możliwe kroki. Praca z dorosłymi — tego, że o powodzeniu decyduje nie talent, tylko to, ile zaangażowania włożysz w naukę gry.",
       "TODO: wykształcenie muzyczne, ukończone szkoły, doświadczenie sceniczne.",
       "TODO: zdanie osobiste — dlaczego uczysz i co najbardziej cieszy Cię w tej pracy.",
     ],
@@ -177,7 +177,7 @@ export const site = {
     items: [
       {
         question: "Gdzie odbywają się lekcje?",
-        answer: `Lekcje odbywają się stacjonarnie w mojej pracowni: ${config.contact.address}, ${city}. Zajęcia prowadzę wyłącznie na miejscu — przy nauce gry wiele rzeczy, jak ustawienie ręki, poprawia się dopiero przy instrumencie.`,
+        answer: `Lekcje odbywają się stacjonarnie: ${config.contact.address}, ${city}. Zajęcia prowadzę wyłącznie na miejscu — przy nauce gry wiele rzeczy, jak ustawienie ręki, poprawia się dopiero przy instrumencie.`,
       },
       {
         question: "Czy uczysz też dzieci?",

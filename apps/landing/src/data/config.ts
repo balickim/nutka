@@ -17,6 +17,8 @@ export const config = {
     emailHref: "mailto:dominika7928@gmail.com",
     whatsappHref: "https://wa.me/48721497150",
     city: "Szczecin",
+    // Miejscownik odmienia się nieregularnie, więc podajemy go wprost obok mianownika.
+    cityLocative: "Szczecinie",
     address: "ul. 26 Kwietnia",
   },
 
