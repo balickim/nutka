@@ -58,3 +58,22 @@ The panels SHALL provide login and existing-account session flows only. They SHA
 
 - **WHEN** a guest opens a teacher or learner panel route
 - **THEN** the application directs the guest to the matching login route without offering public registration
+
+### Requirement: Application titles identify persona spaces
+
+The application SHALL use `nutka — przestrzeń ucznia` for `/learners` and `/learners/*`. It SHALL use `nutka — przestrzeń nauczyciela` for `/teachers` and `/teachers/*`. It SHALL use `nutka` for other application routes.
+
+#### Scenario: Learner route sets learner title
+
+- **WHEN** the browser resolves `/learners` or `/learners/calendar`
+- **THEN** the HTML document title is `nutka — przestrzeń ucznia`
+
+#### Scenario: Teacher route sets teacher title
+
+- **WHEN** the browser resolves `/teachers` or `/teachers/availability`
+- **THEN** the HTML document title is `nutka — przestrzeń nauczyciela`
+
+#### Scenario: Root route sets neutral title
+
+- **WHEN** the browser resolves `/`
+- **THEN** the HTML document title is `nutka`

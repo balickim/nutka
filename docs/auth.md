@@ -39,6 +39,9 @@ Request identity fields cannot replace the resolved persona.
 
 - Teacher application routes use `/teachers/*`.
 - Learner application routes use `/learners/*`.
+- `/learners` and `/learners/*` use the HTML title `nutka — przestrzeń ucznia`.
+- `/teachers` and `/teachers/*` use the HTML title `nutka — przestrzeń nauczyciela`.
+- Other application routes use the neutral HTML title `nutka`.
 - A teacher session cannot authorize learner routes.
 - A learner session cannot authorize teacher routes.
 - Each realm resolves only its own cookie.

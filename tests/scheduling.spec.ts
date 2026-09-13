@@ -160,6 +160,7 @@ test("teacher and learner complete an isolated scheduling lifecycle", async ({ b
   await teacherPage.getByLabel("Hasło").fill("teacher-password");
   await teacherPage.getByRole("button", { name: "Zaloguj się" }).click();
   await expect(teacherPage).toHaveURL(/\/teachers$/);
+  await expect(teacherPage).toHaveTitle("nutka — przestrzeń nauczyciela");
 
   await teacherPage.goto("/teachers/availability");
   await teacherPage.getByRole("button", { name: "Dodaj regułę" }).click();
@@ -172,6 +173,7 @@ test("teacher and learner complete an isolated scheduling lifecycle", async ({ b
   await learnerPage.getByLabel("Hasło").fill("learner-password");
   await learnerPage.getByRole("button", { name: "Zaloguj się" }).click();
   await expect(learnerPage).toHaveURL(/\/learners\/calendar$/);
+  await expect(learnerPage).toHaveTitle("nutka — przestrzeń ucznia");
   await expect(learnerPage.getByRole("heading", { name: "Ada Lovelace", exact: true })).toBeVisible();
   const firstSlotText = await localizedInstant(learnerPage, firstSlot);
   await expect(learnerPage.locator("button.slot-button").first()).toContainText(firstSlotText);

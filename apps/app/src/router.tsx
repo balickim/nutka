@@ -11,6 +11,7 @@ import {
 import { bootstrapAuth as bootstrapLearner } from "./auth/auth";
 import { bootstrapAuth as bootstrapTeacher } from "./auth/teacher";
 import { getPersonaRedirect } from "./auth/redirect";
+import { updateDocumentTitle } from "./document/title";
 import { LoginView } from "./views/LoginView";
 import { HomeView } from "./views/HomeView";
 import { PersonaEntryView } from "./views/PersonaEntryView";
@@ -88,6 +89,8 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });
+updateDocumentTitle(router.state.location.pathname);
+router.subscribe("onResolved", () => updateDocumentTitle(router.state.location.pathname));
 
 declare module "@tanstack/react-router" {
   interface Register { router: typeof router; }
