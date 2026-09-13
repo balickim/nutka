@@ -1,11 +1,16 @@
+// Application assembly wires PocketBase migrations, auth hooks, seed commands, and bootstrap orchestration.
+// Scheduling rules and resource handlers live in their dedicated packages.
 package main
 
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/balickim/nutka/apps/backend/database"
 	_ "github.com/balickim/nutka/apps/backend/database/migrations"
+	"github.com/balickim/nutka/apps/backend/internal/schedulingapi"
+	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -28,8 +33,16 @@ func newApp() *pocketbase.PocketBase {
 }
 
 func configureApp(app *pocketbase.PocketBase) {
-	registerLearnerAuth(app)
+	configureAppWithClock(app, time.Now)
+}
+
+func configureAppWithClock(app *pocketbase.PocketBase, clock schedulingapi.Clock) {
+	schedulingstore.RegisterHooks(app)
+	schedulingapi.RegisterRoutesWithClock(app, clock)
+	registerDualPersonaAuth(app)
 	registerSeedLearnerCommand(app)
+	registerSeedTeacherCommand(app)
+	registerSeedAssignmentCommand(app)
 	app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
 		if err := e.Next(); err != nil {
 			return err

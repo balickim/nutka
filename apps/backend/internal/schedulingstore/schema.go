@@ -1,0 +1,43 @@
+// Package schedulingstore owns PocketBase scheduling names and runtime record hooks.
+// Migrations and API handlers use these contracts to avoid duplicated schema knowledge.
+package schedulingstore
+
+const (
+	TeacherLearnersCollectionName        = "teacher_learners"
+	AvailabilityRulesCollectionName      = "availability_rules"
+	AvailabilityExceptionsCollectionName = "availability_exceptions"
+	LessonsCollectionName                = "lessons"
+	LessonEventsCollectionName           = "lesson_events"
+
+	TeacherTimezoneField           = "timezone"
+	TeacherNameField               = "name"
+	TeacherAvatarField             = "avatar"
+	LastLoginAtField               = "last_login_at"
+	LoginMetadataField             = "login_metadata"
+	DefaultDurationMinutesField    = "default_duration_minutes"
+	ActiveField                    = "active"
+	WeekdayField                   = "weekday"
+	StartTimeField                 = "start_time"
+	EndTimeField                   = "end_time"
+	EnabledField                   = "enabled"
+	StartAtField                   = "start_at"
+	EndAtField                     = "end_at"
+	KindField                      = "kind"
+	NoteField                      = "note"
+	AssignmentField                = "assignment"
+	DurationMinutesField           = "duration_minutes"
+	StatusField                    = "status"
+	CancellationInitiatorRoleField = "cancellation_initiator_role"
+	CancellationInitiatorIDField   = "cancellation_initiator_id"
+	CancelledAtField               = "cancelled_at"
+	LessonField                    = "lesson"
+	InitiatorRoleField             = "initiator_role"
+	InitiatorIDField               = "initiator_id"
+	EventAtField                   = "event_at"
+	PriorStartAtField              = "prior_start_at"
+	PriorEndAtField                = "prior_end_at"
+	NewStartAtField                = "new_start_at"
+	NewEndAtField                  = "new_end_at"
+	PriorDurationMinutesField      = "prior_duration_minutes"
+	NewDurationMinutesField        = "new_duration_minutes"
+)

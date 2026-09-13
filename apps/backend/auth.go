@@ -1,3 +1,4 @@
+// Provides isolated teacher and learner authentication with server-managed sessions and closed native collection routes.
 package main
 
 import (
@@ -18,9 +19,35 @@ import (
 
 var errUnauthenticated = errors.New("unauthenticated")
 
-func registerLearnerAuth(app *pocketbase.PocketBase) {
+type authRealm struct {
+	collection string
+	cookieName string
+	mePath     string
+	logoutPath string
+}
+
+var learnerRealm = authRealm{
+	collection: authconfig.LearnersCollectionName,
+	cookieName: sessioncookie.LearnerName,
+	mePath:     "/api/learners/auth/me",
+	logoutPath: "/api/learners/auth/logout",
+}
+
+var teacherRealm = authRealm{
+	collection: authconfig.TeachersCollectionName,
+	cookieName: sessioncookie.TeacherName,
+	mePath:     "/api/teachers/auth/me",
+	logoutPath: "/api/teachers/auth/logout",
+}
+
+func registerDualPersonaAuth(app *pocketbase.PocketBase) {
+	registerAuthRealms(app, []authRealm{teacherRealm, learnerRealm})
+}
+
+func registerAuthRealms(app *pocketbase.PocketBase, realms []authRealm) {
 	app.OnRecordAuthWithPasswordRequest().BindFunc(func(e *core.RecordAuthWithPasswordRequestEvent) error {
-		if e.Collection == nil || e.Collection.Name != authconfig.LearnersCollectionName {
+		_, ok := realmForCollection(realms, e.Collection)
+		if !ok {
 			return e.Next()
 		}
 		if err := requireIntent(e.RequestEvent); err != nil {
@@ -30,16 +57,18 @@ func registerLearnerAuth(app *pocketbase.PocketBase) {
 	})
 
 	app.OnRecordAuthRequest().BindFunc(func(e *core.RecordAuthRequestEvent) error {
-		if e.Record == nil || e.Record.Collection().Name != authconfig.LearnersCollectionName {
-			return e.Next()
+		var collection *core.Collection
+		if e.Record != nil {
+			collection = e.Record.Collection()
 		}
-		if e.AuthMethod == "" {
+		realm, ok := realmForCollection(realms, collection)
+		if !ok || e.AuthMethod == "" {
 			return e.Next()
 		}
 		if err := requireIntent(e.RequestEvent); err != nil {
 			return err
 		}
-		if !e.Record.Verified() {
+		if !isVerifiedRecord(e.Record, realm) {
 			return e.JSON(http.StatusBadRequest, map[string]string{
 				"message": "Failed to authenticate.",
 				"error":   "invalid login credentials",
@@ -50,21 +79,20 @@ func registerLearnerAuth(app *pocketbase.PocketBase) {
 		e.Token = ""
 		e.Response = &sessioncookie.InjectingWriter{
 			ResponseWriter: e.Response,
-			Cookie:         sessioncookie.Build(token),
+			Cookie:         sessioncookie.Build(realm.cookieName, token),
 		}
-
-		err := e.Next()
-		if err == nil {
-			e.Record.Set("last_login_at", time.Now().UTC().Format(time.RFC3339))
-			if saveErr := e.App.Save(e.Record); saveErr != nil {
-				e.App.Logger().Warn("failed to record learner login", "learner", e.Record.Id, "error", saveErr)
-			}
+		if err := e.Next(); err != nil {
+			return err
 		}
-		return err
+		e.Record.Set("last_login_at", time.Now().UTC().Format(time.RFC3339))
+		if err := e.App.Save(e.Record); err != nil {
+			e.App.Logger().Warn("failed to record auth login", "collection", realm.collection, "record", e.Record.Id, "error", err)
+		}
+		return nil
 	})
 
 	app.OnRecordAuthRefreshRequest().BindFunc(func(e *core.RecordAuthRefreshRequestEvent) error {
-		if e.Collection == nil || e.Collection.Name != authconfig.LearnersCollectionName {
+		if _, ok := realmForCollection(realms, e.Collection); !ok {
 			return e.Next()
 		}
 		return e.JSON(http.StatusUnauthorized, map[string]string{
@@ -74,49 +102,80 @@ func registerLearnerAuth(app *pocketbase.PocketBase) {
 	})
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/auth/me", learnerMe)
-		e.Router.POST("/api/auth/logout", learnerLogout)
-		e.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id:       "nutkaLearnerSessionCookieBridge",
-			Priority: apis.DefaultLoadAuthTokenMiddlewarePriority - 1,
-			Func: func(e *core.RequestEvent) error {
-				if e.Auth != nil || e.Request.Header.Get("Authorization") != "" {
-					return e.Next()
-				}
-				cookie, err := e.Request.Cookie(authconfig.SessionCookieName)
-				if err == nil && cookie.Value != "" {
-					record, findErr := e.App.FindAuthRecordByToken(cookie.Value, core.TokenTypeAuth)
-					if findErr == nil && isVerifiedLearner(record) {
-						e.Auth = record
-					}
-				}
-				return e.Next()
-			},
-		})
-		// PocketBase's admin UI uses the native collection routes, including
-		// /api/collections/learners/records. Run this guard after PB resolves
-		// Authorization so valid superusers can use those routes while the
-		// deferred learner self-service surface remains hidden.
-		e.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id:       "nutkaDeferredLearnerEndpointGuard",
-			Priority: apis.DefaultLoadAuthTokenMiddlewarePriority + 1,
-			Func: func(e *core.RequestEvent) error {
-				if !isDeferredLearnerEndpoint(e.Request) || (e.Auth != nil && e.Auth.IsSuperuser()) {
-					return e.Next()
-				}
-				return e.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
-			},
-		})
+		for _, realm := range realms {
+			registerRealmRoutes(e, realm)
+		}
+		registerSessionCookieBridge(e, realms)
+		registerNativeRealmGuard(e)
 		return e.Next()
 	})
 }
 
-func isDeferredLearnerEndpoint(request *http.Request) bool {
-	const prefix = "/api/collections/learners/"
-	if !strings.HasPrefix(request.URL.Path, prefix) {
-		return false
+func realmForCollection(realms []authRealm, collection *core.Collection) (authRealm, bool) {
+	if collection == nil {
+		return authRealm{}, false
 	}
-	return request.URL.Path != prefix+"auth-with-password" && request.URL.Path != prefix+"auth-refresh"
+	for _, realm := range realms {
+		if collection.Name == realm.collection {
+			return realm, true
+		}
+	}
+	return authRealm{}, false
+}
+
+func registerRealmRoutes(e *core.ServeEvent, realm authRealm) {
+	e.Router.GET(realm.mePath, func(event *core.RequestEvent) error {
+		return realmMe(event, realm)
+	})
+	e.Router.POST(realm.logoutPath, func(event *core.RequestEvent) error {
+		return realmLogout(event, realm)
+	})
+}
+
+func registerSessionCookieBridge(e *core.ServeEvent, realms []authRealm) {
+	e.Router.Bind(&hook.Handler[*core.RequestEvent]{
+		Id:       "nutkaPersonaSessionCookieBridge",
+		Priority: apis.DefaultLoadAuthTokenMiddlewarePriority - 1,
+		Func: func(event *core.RequestEvent) error {
+			if event.Auth != nil || event.Request.Header.Get("Authorization") != "" {
+				return event.Next()
+			}
+			realm, ok := realmForRequest(realms, event.Request)
+			if !ok {
+				return event.Next()
+			}
+			record, _, err := recordFromCookie(event.App, event.Request, realm)
+			if err == nil {
+				event.Auth = record
+			}
+			return event.Next()
+		},
+	})
+}
+
+func registerNativeRealmGuard(e *core.ServeEvent) {
+	e.Router.Bind(&hook.Handler[*core.RequestEvent]{
+		Id:       "nutkaDeferredPersonaEndpointGuard",
+		Priority: apis.DefaultLoadAuthTokenMiddlewarePriority + 1,
+		Func: func(event *core.RequestEvent) error {
+			if !isDeferredAuthEndpoint(event.Request) || (event.Auth != nil && event.Auth.IsSuperuser()) {
+				return event.Next()
+			}
+			return event.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+		},
+	})
+}
+
+func isDeferredAuthEndpoint(request *http.Request) bool {
+	path := request.URL.Path
+	for _, collection := range []string{authconfig.LearnersCollectionName, authconfig.TeachersCollectionName} {
+		prefix := "/api/collections/" + collection + "/"
+		if !strings.HasPrefix(path, prefix) {
+			continue
+		}
+		return path != prefix+"auth-with-password" && path != prefix+"auth-refresh"
+	}
+	return false
 }
 
 func requireIntent(e *core.RequestEvent) error {
@@ -126,16 +185,13 @@ func requireIntent(e *core.RequestEvent) error {
 	return e.JSON(http.StatusForbidden, map[string]string{"error": "missing intent header"})
 }
 
-func learnerMe(e *core.RequestEvent) error {
-	record, expiresAt, err := learnerFromCookie(e.App, e.Request)
+func realmMe(e *core.RequestEvent, realm authRealm) error {
+	record, expiresAt, err := recordFromCookie(e.App, e.Request, realm)
 	if err != nil {
-		e.SetCookie(sessioncookie.Clear())
+		e.SetCookie(sessioncookie.Clear(realm.cookieName))
 		return e.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
 	}
-	// The learner is authenticated for this request, so the home view may show
-	// the account identity even when email visibility is disabled publicly.
 	record.IgnoreEmailVisibility(true)
-
 	response := map[string]any{"record": record}
 	if !expiresAt.IsZero() {
 		response["session_expires_at"] = expiresAt.UTC().Format(time.RFC3339)
@@ -143,24 +199,23 @@ func learnerMe(e *core.RequestEvent) error {
 	return e.JSON(http.StatusOK, response)
 }
 
-func learnerLogout(e *core.RequestEvent) error {
+func realmLogout(e *core.RequestEvent, realm authRealm) error {
 	if err := requireIntent(e); err != nil {
 		return err
 	}
-	e.SetCookie(sessioncookie.Clear())
+	e.SetCookie(sessioncookie.Clear(realm.cookieName))
 	return e.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func learnerFromCookie(app core.App, request *http.Request) (*core.Record, time.Time, error) {
-	cookie, err := request.Cookie(authconfig.SessionCookieName)
+func recordFromCookie(app core.App, request *http.Request, realm authRealm) (*core.Record, time.Time, error) {
+	cookie, err := request.Cookie(realm.cookieName)
 	if err != nil || cookie.Value == "" {
 		return nil, time.Time{}, errUnauthenticated
 	}
 	record, err := app.FindAuthRecordByToken(cookie.Value, core.TokenTypeAuth)
-	if err != nil || !isVerifiedLearner(record) {
+	if err != nil || !isVerifiedRecord(record, realm) {
 		return nil, time.Time{}, errUnauthenticated
 	}
-
 	claims, err := security.ParseUnverifiedJWT(cookie.Value)
 	if err != nil {
 		return record, time.Time{}, nil
@@ -168,9 +223,18 @@ func learnerFromCookie(app core.App, request *http.Request) (*core.Record, time.
 	return record, jwtExpiry(claims), nil
 }
 
-func isVerifiedLearner(record *core.Record) bool {
-	return record != nil && record.Collection() != nil &&
-		record.Collection().Name == authconfig.LearnersCollectionName && record.Verified()
+func realmForRequest(realms []authRealm, request *http.Request) (authRealm, bool) {
+	path := request.URL.Path
+	for _, realm := range realms {
+		if strings.HasPrefix(path, "/api/"+realm.collection+"/") || strings.HasPrefix(path, "/api/collections/"+realm.collection+"/") {
+			return realm, true
+		}
+	}
+	return authRealm{}, false
+}
+
+func isVerifiedRecord(record *core.Record, realm authRealm) bool {
+	return record != nil && record.Collection() != nil && record.Collection().Name == realm.collection && record.Verified()
 }
 
 func jwtExpiry(claims map[string]any) time.Time {

@@ -1,8 +1,10 @@
+// Creates the closed learner auth collection with the shared session lifetime.
 package migrations
 
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/balickim/nutka/apps/backend/internal/authconfig"
 	"github.com/pocketbase/pocketbase/core"
@@ -27,7 +29,7 @@ func init() {
 		// Verification is checked in the auth hook so unverified and unknown
 		// identities share the same generic credential error.
 		collection.AuthRule = types.Pointer("")
-		collection.AuthToken.Duration = 12 * 60 * 60
+		collection.AuthToken.Duration = int64(authconfig.SessionDuration / time.Second)
 		collection.PasswordAuth.Enabled = true
 		collection.PasswordAuth.IdentityFields = []string{core.FieldNameEmail}
 		collection.MFA.Enabled = false

@@ -1,37 +1,37 @@
+// Builds and clears the host-only cookies that carry server-managed auth sessions.
 package sessioncookie
 
 import (
 	"net/http"
-	"time"
+
+	"github.com/balickim/nutka/apps/backend/internal/authconfig"
 )
 
 const (
-	Name                = "__Host-nutka_session"
-	AccessTokenLifetime = 12 * time.Hour
+	TeacherName         = "__Host-nutka_teacher_session"
+	LearnerName         = "__Host-nutka_learner_session"
 	AuthRefreshDisabled = "auth_refresh_disabled"
 )
 
-func Build(token string) *http.Cookie {
+func Build(name, token string) *http.Cookie {
 	return &http.Cookie{
-		Name:     Name,
+		Name:     name,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(AccessTokenLifetime / time.Second),
+		MaxAge:   int(authconfig.SessionDuration.Seconds()),
 	}
 }
 
-func Clear() *http.Cookie {
-	cookie := Build("")
+func Clear(name string) *http.Cookie {
+	cookie := Build(name, "")
 	cookie.MaxAge = -1
 	return cookie
 }
 
-// InjectingWriter adds a login cookie only when the eventual auth response is
-// successful. This keeps MFA/error responses from accidentally creating a
-// browser session.
+// InjectingWriter adds a login cookie only for successful auth responses.
 type InjectingWriter struct {
 	http.ResponseWriter
 	Cookie      *http.Cookie
