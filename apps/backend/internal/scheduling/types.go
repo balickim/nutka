@@ -6,14 +6,16 @@ import (
 	"errors"
 	"sort"
 	"time"
+
+	"github.com/balickim/nutka/apps/backend/internal/businesspolicy"
 )
 
 const (
 	DefaultTimezone       = "Europe/Warsaw"
-	SlotDuration          = 15 * time.Minute
-	ProtectedBuffer       = 5 * time.Minute
-	DefaultLessonDuration = 45 * time.Minute
-	HorizonDuration       = 14 * 24 * time.Hour
+	SlotDuration          = businesspolicy.StartGridMinutes * time.Minute
+	ProtectedBuffer       = businesspolicy.ParticipantBufferMinutes * time.Minute
+	DefaultLessonDuration = businesspolicy.LessonDurationMinutes * time.Minute
+	HorizonDuration       = businesspolicy.BookingHorizonDays * 24 * time.Hour
 )
 
 var (
@@ -57,12 +59,19 @@ func (i Interval) Intersects(other Interval) bool {
 	return i.Valid() && other.Valid() && i.Start.Before(other.End) && other.Start.Before(i.End)
 }
 
-// Protected expands an interval by five minutes for participant conflict checks.
-func (i Interval) Protected() Interval {
+// Protected expands an interval by the configured buffer for participant conflict checks.
+func (i Interval) Protected(buffer ...time.Duration) Interval {
 	if !i.Valid() {
 		return Interval{}
 	}
-	return Interval{Start: i.Start.Add(-ProtectedBuffer), End: i.End.Add(ProtectedBuffer)}
+	amount := ProtectedBuffer
+	if len(buffer) > 0 {
+		amount = buffer[0]
+	}
+	if amount < 0 {
+		return Interval{}
+	}
+	return Interval{Start: i.Start.Add(-amount), End: i.End.Add(amount)}
 }
 
 // WeekdayRule stores a recurring local wall-clock interval. Times are minutes after midnight.
@@ -106,6 +115,8 @@ type LessonStatus string
 const (
 	Scheduled LessonStatus = "scheduled"
 	Cancelled LessonStatus = "cancelled"
+	// CancelledState names the persisted commercial schedule state.
+	CancelledState LessonStatus = Cancelled
 )
 
 type Lesson struct {
@@ -170,14 +181,12 @@ func ValidateTeacherDurationOverride(duration time.Duration) error {
 }
 
 func IsOnSlotGrid(t time.Time) bool {
-	if t.IsZero() {
-		return false
-	}
-	u := t.UTC()
-	return u.Equal(u.Truncate(SlotDuration))
+	return isOnGrid(t, SlotDuration)
 }
 
-func HorizonEnd(now time.Time) time.Time { return now.UTC().Add(HorizonDuration) }
+func HorizonEnd(now time.Time) time.Time {
+	return now.UTC().Add(businesspolicy.Current().BookingHorizon)
+}
 
 func sortIntervals(intervals []Interval) {
 	sort.Slice(intervals, func(a, b int) bool { return intervals[a].Start.Before(intervals[b].Start) })

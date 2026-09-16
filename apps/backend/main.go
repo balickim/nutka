@@ -9,6 +9,11 @@ import (
 
 	"github.com/balickim/nutka/apps/backend/database"
 	_ "github.com/balickim/nutka/apps/backend/database/migrations"
+	"github.com/balickim/nutka/apps/backend/internal/businesspolicyapi"
+	"github.com/balickim/nutka/apps/backend/internal/commercialapi"
+	"github.com/balickim/nutka/apps/backend/internal/historyapi"
+	"github.com/balickim/nutka/apps/backend/internal/ledgerapi"
+	"github.com/balickim/nutka/apps/backend/internal/regularcontractapi"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingapi"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/pocketbase"
@@ -39,6 +44,15 @@ func configureApp(app *pocketbase.PocketBase) {
 func configureAppWithClock(app *pocketbase.PocketBase, clock schedulingapi.Clock) {
 	schedulingstore.RegisterHooks(app)
 	schedulingapi.RegisterRoutesWithClock(app, clock)
+	schedulingapi.RegisterBookingRoutes(app, clock)
+	schedulingapi.RegisterAvailabilityRoutesWithClock(app, clock)
+	businesspolicyapi.RegisterRoutes(app)
+	commercialapi.RegisterRoutesWithClock(app, commercialapi.Clock(clock))
+	historyapi.RegisterRoutes(app)
+	contractRepository := regularcontractapi.NewPocketBaseRepository(app, regularcontractapi.Clock(clock))
+	regularcontractapi.RegisterRoutes(app, regularcontractapi.New(contractRepository, regularcontractapi.Clock(clock)))
+	ledgerService := ledgerapi.NewPocketBaseService(app, func() time.Time { return clock() })
+	ledgerapi.RegisterRoutesWithClock(app, ledgerService, ledgerapi.Clock(clock))
 	registerDualPersonaAuth(app)
 	registerSeedLearnerCommand(app)
 	registerSeedTeacherCommand(app)

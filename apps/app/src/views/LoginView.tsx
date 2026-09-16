@@ -4,9 +4,8 @@ import { Formik } from "formik";
 import { useState } from "react";
 
 import { authCopy } from "../auth/copy";
-import { classifyAuthError, login as learnerLogin } from "../auth/auth";
 import { getPersonaRedirect } from "../auth/redirect";
-import { login as teacherLogin } from "../auth/teacher";
+import { classifyAuthError, usePersonaLogin } from "../auth/session";
 import { loginSchema } from "../auth/validation";
 import { router } from "../router";
 
@@ -15,6 +14,7 @@ type LoginViewProps = { realm?: LoginRealm };
 
 export function LoginView({ realm = "learner" }: LoginViewProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const login = usePersonaLogin(realm);
   const isTeacher = realm === "teacher";
   const loginTitle = isTeacher ? "Zaloguj się jako nauczyciel" : "Zaloguj się jako uczeń";
   const fallback = isTeacher ? "/teachers" : "/learners/calendar";
@@ -38,8 +38,7 @@ export function LoginView({ realm = "learner" }: LoginViewProps) {
           onSubmit={async (values, helpers) => {
             setSubmitError(null);
             try {
-              if (isTeacher) await teacherLogin(values.email, values.password);
-              else await learnerLogin(values.email, values.password);
+              await login.mutateAsync(values);
               const target = getPersonaRedirect(window.location.search ? new URLSearchParams(window.location.search).get("redirect") : null, realm);
               if (target === fallback) await router.navigate({ to: fallback });
               else window.location.assign(target);

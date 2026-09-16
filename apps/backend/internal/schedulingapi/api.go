@@ -37,28 +37,21 @@ func RegisterRoutesWithClock(app *pocketbase.PocketBase, clock Clock) {
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		r := e.Router
 		r.GET("/api/teachers/assignments", assignments)
-		r.PATCH("/api/teachers/assignments/{id}", teacherAssignmentUpdate)
+		r.PATCH("/api/teachers/assignments/{id}", func(event *core.RequestEvent) error { return teacherAssignmentUpdateAt(event, clock) })
 		r.GET("/api/learners/assignments", assignments)
 		r.GET("/api/learners/assignments/{id}/slots", func(event *core.RequestEvent) error { return learnerSlotsAt(event, clock) })
 		r.POST("/api/learners/assignments/{id}/book", func(event *core.RequestEvent) error { return learnerBookingAt(event, clock) })
-		r.PATCH("/api/teachers/lessons/{id}/reschedule", func(event *core.RequestEvent) error { return rescheduleLesson(event, "teacher", clock) })
-		r.PATCH("/api/learners/lessons/{id}/reschedule", func(event *core.RequestEvent) error { return rescheduleLesson(event, "learner", clock) })
+		r.POST("/api/teachers/lessons/{id}/reschedule", func(event *core.RequestEvent) error { return rescheduleLesson(event, "teacher", clock) })
+		r.POST("/api/learners/lessons/{id}/reschedule", func(event *core.RequestEvent) error { return rescheduleLesson(event, "learner", clock) })
 		r.POST("/api/teachers/lessons/{id}/cancel", func(event *core.RequestEvent) error { return cancelLesson(event, "teacher", clock) })
 		r.POST("/api/learners/lessons/{id}/cancel", func(event *core.RequestEvent) error { return cancelLesson(event, "learner", clock) })
-		r.GET("/api/teachers/cancellation-counters", teacherCancellationCounters)
-		r.GET("/api/learners/cancellation-counters", learnerCancellationCounters)
-
+		r.POST("/api/teachers/lessons/{id}/outcome", func(event *core.RequestEvent) error { return recordLessonOutcome(event, clock) })
+		r.POST("/api/teachers/lessons/{id}/correction", func(event *core.RequestEvent) error { return correctLessonEntitlement(event, clock) })
 		r.GET("/api/teachers/availability/rules", teacherRules)
-		r.POST("/api/teachers/availability/rules", createRule)
-		r.PATCH("/api/teachers/availability/rules/{id}", updateRule)
-		r.DELETE("/api/teachers/availability/rules/{id}", deleteRule)
 		r.GET("/api/teachers/availability/exceptions", teacherExceptions)
-		r.POST("/api/teachers/availability/exceptions", createException)
-		r.PATCH("/api/teachers/availability/exceptions/{id}", updateException)
-		r.DELETE("/api/teachers/availability/exceptions/{id}", deleteException)
 
-		r.GET("/api/teachers/calendar", teacherCalendar)
-		r.GET("/api/learners/calendar", learnerCalendar)
+		r.GET("/api/teachers/calendar", func(event *core.RequestEvent) error { return teacherCalendarAt(event, clock) })
+		r.GET("/api/learners/calendar", func(event *core.RequestEvent) error { return learnerCalendarAt(event, clock) })
 		return e.Next()
 	})
 }
@@ -120,6 +113,8 @@ func handleError(e *core.RequestEvent, err error) error {
 		return respond(e, http.StatusForbidden, "missing_intent", "The mutation intent header is required.")
 	case errors.Is(err, errDuration), errors.Is(err, scheduling.ErrInvalidDuration):
 		return respond(e, http.StatusBadRequest, "invalid_duration", "The duration must be a positive multiple of 15 minutes.")
+	case errors.Is(err, errDurationOverride):
+		return respond(e, http.StatusBadRequest, "duration_override", "Commercial lessons always use the policy duration.")
 	case errors.Is(err, errGrid), errors.Is(err, scheduling.ErrInvalidGrid):
 		return respond(e, http.StatusBadRequest, "invalid_grid", "The start must be aligned to a 15-minute boundary.")
 	case errors.Is(err, errInvalid):
@@ -127,7 +122,7 @@ func handleError(e *core.RequestEvent, err error) error {
 	case errors.Is(err, errHorizon):
 		return respond(e, http.StatusBadRequest, "horizon", "The requested time is outside the rolling horizon.")
 	case errors.Is(err, errConflict):
-		return respond(e, http.StatusConflict, "conflict", "The requested interval conflicts with a scheduled lesson.")
+		return respond(e, http.StatusConflict, "lesson_conflict", "The requested interval conflicts with a scheduled lesson.")
 	default:
 		return respond(e, http.StatusInternalServerError, "internal_error", "The scheduling request failed.")
 	}

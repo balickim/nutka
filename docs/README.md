@@ -1,6 +1,6 @@
 # Nutka documentation
 
-This directory contains the contracts for Nutka authentication and scheduling.
+This directory contains the contracts for Nutka authentication, scheduling, and commercial lesson plans.
 
 ## Contract order
 
@@ -14,11 +14,19 @@ This directory contains the contracts for Nutka authentication and scheduling.
 
 - [Authentication contract](auth.md) defines the teacher and learner realms.
 - [Scheduling constitution](constitutions/scheduling.md) defines scheduling rules.
+- [Frontend query state constitution](constitutions/frontend-query-state.md) defines frontend server-state ownership.
+- [Commercial policy decision](adr/0001-commercial-policy-and-history.md) records backend policy authority and immutable history.
 - [Assignments API](api/assignments.md) defines assignment reads and teacher updates.
 - [Availability API](api/availability.md) defines recurring rules and exceptions.
 - [Booking API](api/booking.md) defines learner slots and booking.
-- [Lifecycle API](api/lifecycle.md) defines lesson changes and counters.
+- [Lifecycle API](api/lifecycle.md) defines lesson changes, outcomes, and corrections.
 - [Calendar API](api/calendar.md) defines teacher and learner calendar reads.
+- [Business policy API](api/business-policy.md) defines authenticated policy reads.
+- [Packages API](api/packages.md) defines package purchases and token transitions.
+- [Regular contracts API](api/contracts.md) defines weekly contracts and occurrence series.
+- [Payments API](api/payments.md) defines settlement, charges, credits, and refunds.
+- [Business history API](api/history.md) defines immutable role-scoped events.
+- [Teacher unresolved work API](api/unresolved-work.md) defines actionable teacher work.
 - [Scheduling errors](api/errors.md) defines shared status and error codes.
 
 ## Change workflow

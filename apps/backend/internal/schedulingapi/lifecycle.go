@@ -3,9 +3,14 @@ package schedulingapi
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
+	"github.com/balickim/nutka/apps/backend/internal/commercial"
+	"github.com/balickim/nutka/apps/backend/internal/history"
+	lessondomain "github.com/balickim/nutka/apps/backend/internal/lesson"
+	"github.com/balickim/nutka/apps/backend/internal/regularcontract"
 	"github.com/balickim/nutka/apps/backend/internal/scheduling"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/pocketbase/core"
@@ -28,8 +33,15 @@ func rescheduleLesson(e *core.RequestEvent, role string, clock Clock) error {
 	if err := bindBody(e, &input); err != nil {
 		return handleError(e, err)
 	}
-	if input.StartAt == nil && input.DurationMinutes == nil {
+	if input.DurationMinutes != nil {
+		return handleError(e, errDurationOverride)
+	}
+	if input.StartAt == nil {
 		return handleError(e, errInvalid)
+	}
+	replacement, err := parseInstant(*input.StartAt)
+	if err != nil {
+		return handleError(e, err)
 	}
 	now := clock().UTC()
 	var result *core.Record
@@ -44,61 +56,24 @@ func rescheduleLesson(e *core.RequestEvent, role string, clock Clock) error {
 		if assignmentErr != nil || !assignment.GetBool(schedulingstore.ActiveField) {
 			return errForbidden
 		}
-		if !lesson.GetDateTime(schedulingstore.StartAtField).Time().UTC().After(now) || lesson.GetString(schedulingstore.StatusField) != string(scheduling.Scheduled) {
-			return errConflict
+		command, commandErr := lifecycleCommand(tx, lesson, history.Actor{Role: history.ActorRole(role), ID: account.Id}, now, replacement)
+		if commandErr != nil {
+			return commandErr
 		}
-		start, duration, validationErr := rescheduleValues(lesson, role, input)
-		if validationErr != nil {
-			return validationErr
+		decision, decisionErr := lessondomain.RescheduleLesson(command)
+		if decisionErr != nil {
+			return decisionErr
 		}
-		if err := validateLifecycleInterval(tx, now, start, duration, lesson.GetString("teacher"), lesson.GetString("learner"), lesson.Id); err != nil {
-			return err
-		}
-		priorStart := lesson.GetDateTime(schedulingstore.StartAtField).Time().UTC()
-		priorEnd := lesson.GetDateTime(schedulingstore.EndAtField).Time().UTC()
-		priorDuration := lesson.GetInt(schedulingstore.DurationMinutesField)
-		lesson.Set(schedulingstore.StartAtField, start.Format(time.RFC3339))
-		lesson.Set(schedulingstore.EndAtField, start.Add(duration).Format(time.RFC3339))
-		lesson.Set(schedulingstore.DurationMinutesField, int(duration/time.Minute))
-		if err := tx.Save(lesson); err != nil {
-			return errConflict
-		}
-		if err := saveLessonEvent(tx, lesson, "rescheduled", role, account.Id, now, priorStart, priorEnd, start, start.Add(duration), duration, priorDuration); err != nil {
+		if err := persistLifecycleDecision(tx, lesson, decision, now); err != nil {
 			return err
 		}
 		result = lesson
 		return nil
 	})
 	if err != nil {
-		return handleError(e, err)
+		return lifecycleError(e, err)
 	}
-	return e.JSON(http.StatusOK, lessonValue(result))
-}
-
-func rescheduleValues(lesson *core.Record, role string, input rescheduleInput) (time.Time, time.Duration, error) {
-	start := lesson.GetDateTime(schedulingstore.StartAtField).Time().UTC()
-	if input.StartAt != nil {
-		var err error
-		start, err = parseInstant(*input.StartAt)
-		if err != nil {
-			return time.Time{}, 0, err
-		}
-	}
-	duration := time.Duration(lesson.GetInt(schedulingstore.DurationMinutesField)) * time.Minute
-	if input.DurationMinutes != nil {
-		if role != "teacher" {
-			return time.Time{}, 0, errInvalid
-		}
-		var minutes int
-		if err := json.Unmarshal(input.DurationMinutes, &minutes); err != nil {
-			return time.Time{}, 0, errInvalid
-		}
-		duration = time.Duration(minutes) * time.Minute
-	}
-	if err := scheduling.ValidateLessonDuration(duration); err != nil {
-		return time.Time{}, 0, errDuration
-	}
-	return start, duration, nil
+	return e.JSON(http.StatusOK, lessonValueAt(result, now))
 }
 
 func findAuthorizedLesson(app core.App, id, role, account string) (*core.Record, error) {
@@ -139,6 +114,7 @@ func cancelLesson(e *core.RequestEvent, role string, clock Clock) error {
 	}
 	now := clock().UTC()
 	var result *core.Record
+	var planEffect, cutoff string
 	lessonMutationMu.Lock()
 	defer lessonMutationMu.Unlock()
 	err = e.App.RunInTransaction(func(tx core.App) error {
@@ -146,27 +122,65 @@ func cancelLesson(e *core.RequestEvent, role string, clock Clock) error {
 		if lookupErr != nil {
 			return lookupErr
 		}
-		if lesson.GetString(schedulingstore.StatusField) != string(scheduling.Scheduled) || !lesson.GetDateTime(schedulingstore.StartAtField).Time().UTC().After(now) {
-			return errConflict
+		command, commandErr := lifecycleCommand(tx, lesson, history.Actor{Role: history.ActorRole(role), ID: account.Id}, now, time.Time{})
+		if commandErr != nil {
+			return commandErr
 		}
-		start := lesson.GetDateTime(schedulingstore.StartAtField).Time().UTC()
-		end := lesson.GetDateTime(schedulingstore.EndAtField).Time().UTC()
-		duration := time.Duration(lesson.GetInt(schedulingstore.DurationMinutesField)) * time.Minute
-		lesson.Set(schedulingstore.StatusField, string(scheduling.Cancelled))
-		lesson.Set(schedulingstore.CancellationInitiatorRoleField, role)
-		lesson.Set(schedulingstore.CancellationInitiatorIDField, account.Id)
-		lesson.Set(schedulingstore.CancelledAtField, now.Format(time.RFC3339))
-		if err := tx.Save(lesson); err != nil {
-			return errInvalid
+		decision, decisionErr := lessondomain.CancelLesson(command)
+		if decisionErr != nil {
+			return decisionErr
 		}
-		if err := saveLessonEvent(tx, lesson, "cancelled", role, account.Id, now, start, end, time.Time{}, time.Time{}, duration, int(duration/time.Minute)); err != nil {
+		if err := persistLifecycleDecision(tx, lesson, decision, now); err != nil {
 			return err
 		}
 		result = lesson
+		planEffect = decision.PlanEffect
+		if role == "learner" && command.Lesson.Interval.Start.Sub(now) < commandCutoff(command) {
+			cutoff = "late"
+		} else {
+			cutoff = "timely"
+		}
 		return nil
 	})
 	if err != nil {
+		return lifecycleError(e, err)
+	}
+	value := lessonValueAt(result, now)
+	value.PlanEffect, value.Cutoff = planEffect, cutoff
+	return e.JSON(http.StatusOK, value)
+}
+
+func commandCutoff(command lessondomain.Command) time.Duration {
+	if command.Contract != nil {
+		return command.Contract.Policy.LearnerChangeCutoff
+	}
+	if command.Package != nil {
+		return time.Duration(command.Package.Policy.LearnerChangeCutoffHours) * time.Hour
+	}
+	return 24 * time.Hour
+}
+
+func lifecycleError(e *core.RequestEvent, err error) error {
+	switch {
+	case errors.Is(err, lessondomain.ErrUnauthorized):
+		return handleError(e, errForbidden)
+	case errors.Is(err, lessondomain.ErrStarted), errors.Is(err, lessondomain.ErrCancelled):
+		return respond(e, http.StatusConflict, "started_lesson", "A started or closed lesson cannot change.")
+	case errors.Is(err, commercial.ErrLearnerChangeTooLate), errors.Is(err, regularcontract.ErrCutoff):
+		return respond(e, http.StatusBadRequest, "learner_change_cutoff", "Learner rescheduling is unavailable inside the change cutoff.")
+	case errors.Is(err, regularcontract.ErrAllowanceExhausted), errors.Is(err, regularcontract.ErrAlreadyRescheduled):
+		return respond(e, http.StatusConflict, "contract_allowance_exhausted", "The contract allowance is exhausted.")
+	case errors.Is(err, regularcontract.ErrReplacementDeadline):
+		return respond(e, http.StatusBadRequest, "contract_replacement_deadline", "The replacement exceeds the contract deadline.")
+	case errors.Is(err, regularcontract.ErrUnavailable), errors.Is(err, scheduling.ErrConflict), errors.Is(err, errConflict):
+		return respond(e, http.StatusConflict, "lesson_conflict", "The replacement conflicts with availability or a participant lesson.")
+	case errors.Is(err, lessondomain.ErrOutcomeUnavailable), errors.Is(err, lessondomain.ErrOutcomeAlreadyStored):
+		return respond(e, http.StatusConflict, "invalid_outcome", "The lesson outcome cannot change in its current state.")
+	case errors.Is(err, lessondomain.ErrInvalidCommand), errors.Is(err, lessondomain.ErrReplacementRequired):
+		return handleError(e, errInvalid)
+	case errors.Is(err, lessondomain.ErrCorrectionTarget):
+		return respond(e, http.StatusBadRequest, "correction_not_allowed", "The lesson transition cannot be corrected.")
+	default:
 		return handleError(e, err)
 	}
-	return e.JSON(http.StatusOK, lessonValue(result))
 }

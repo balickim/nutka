@@ -1,0 +1,163 @@
+// Holds the single authoritative registry of frontend query keys and the cache effect of every mutation.
+
+import type { QueryFilters } from "@tanstack/react-query";
+
+import type { PersonaRole } from "../api/scheduling";
+
+export type CacheEffect = {
+  cancel: QueryFilters[];
+  invalidate: QueryFilters[];
+  remove: QueryFilters[];
+};
+
+const root = "nutka";
+
+export const queryKeys = {
+  persona: (role: PersonaRole) => [root, role] as const,
+  session: (role: PersonaRole) => [root, role, "session"] as const,
+  policy: (role: PersonaRole) => [root, role, "policy"] as const,
+  calendars: (role: PersonaRole) => [root, role, "calendar"] as const,
+  calendar: (role: PersonaRole, accountId: string) =>
+    [root, role, "calendar", accountId] as const,
+  learnerSlotsRoot: () => [root, "learner", "slots"] as const,
+  learnerSlots: (learnerId: string, assignmentId: string) =>
+    [root, "learner", "slots", learnerId, assignmentId] as const,
+  commercialSummaries: (role: PersonaRole) =>
+    [root, role, "assignment-summary"] as const,
+  commercialSummary: (
+    role: PersonaRole,
+    accountId: string,
+    assignmentId: string,
+  ) => [root, role, "assignment-summary", accountId, assignmentId] as const,
+  contractSeriesRoot: (role: PersonaRole) =>
+    [root, role, "contract-series"] as const,
+  contractSeries: (
+    role: PersonaRole,
+    assignmentId: string,
+    contractId: string,
+  ) => [root, role, "contract-series", assignmentId, contractId] as const,
+  financialWorkRoot: (role: PersonaRole) =>
+    [root, role, "financial-work"] as const,
+  financialWork: (role: PersonaRole, accountId: string, assignmentId = "all") =>
+    [root, role, "financial-work", accountId, assignmentId] as const,
+  historyRoot: (role: PersonaRole) => [root, role, "history"] as const,
+  history: (role: PersonaRole, accountId: string, assignmentId: string) =>
+    [root, role, "history", accountId, assignmentId] as const,
+  unresolvedWork: (role: "teacher", accountId: string) =>
+    [root, role, "unresolved-work", accountId] as const,
+};
+
+const effect = (parts: Partial<CacheEffect>): CacheEffect => ({
+  cancel: [],
+  invalidate: [],
+  remove: [],
+  ...parts,
+});
+const bothCalendars = (): QueryFilters[] => [
+  { queryKey: queryKeys.calendars("teacher") },
+  { queryKey: queryKeys.calendars("learner") },
+];
+const everyLearnerSlot = (): QueryFilters => ({
+  queryKey: queryKeys.learnerSlotsRoot(),
+});
+const assignmentSlots = (assignmentId: string): QueryFilters => ({
+  queryKey: queryKeys.learnerSlotsRoot(),
+  predicate: (query) => query.queryKey[4] === assignmentId,
+});
+const affectedSummaries = (assignmentId: string): QueryFilters[] =>
+  ["teacher" as PersonaRole, "learner" as PersonaRole].map((role) => ({
+    queryKey: queryKeys.commercialSummaries(role),
+    predicate: (query) => query.queryKey[4] === assignmentId,
+  }));
+const allFinancialWork = (): QueryFilters[] => [
+  { queryKey: queryKeys.financialWorkRoot("teacher") },
+  { queryKey: queryKeys.financialWorkRoot("learner") },
+];
+const allHistory = (): QueryFilters[] => [
+  { queryKey: queryKeys.historyRoot("teacher") },
+  { queryKey: queryKeys.historyRoot("learner") },
+];
+const teacherUnresolvedWork = (): QueryFilters[] => [
+  { queryKey: [root, "teacher", "unresolved-work"] },
+];
+const allContractSeries = (): QueryFilters[] => [
+  { queryKey: queryKeys.contractSeriesRoot("teacher") },
+  { queryKey: queryKeys.contractSeriesRoot("learner") },
+];
+
+const commercialReadEffects = (assignmentId?: string): QueryFilters[] => [
+  ...(assignmentId
+    ? affectedSummaries(assignmentId)
+    : [
+        { queryKey: queryKeys.commercialSummaries("teacher") },
+        { queryKey: queryKeys.commercialSummaries("learner") },
+      ]),
+  ...allFinancialWork(),
+  ...allHistory(),
+  ...teacherUnresolvedWork(),
+];
+const lessonMutationEffects = (assignmentId?: string): CacheEffect =>
+  effect({
+    invalidate: [
+      ...bothCalendars(),
+      everyLearnerSlot(),
+      ...commercialReadEffects(assignmentId),
+    ],
+  });
+
+export const queryRules = {
+  // An activity or duration change alters only the slots of that assignment.
+  assignmentWrite: (assignmentId: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...bothCalendars(),
+        assignmentSlots(assignmentId),
+        ...affectedSummaries(assignmentId),
+      ],
+    }),
+  // A participant conflict from one lesson can block instants across assignments.
+  lessonWrite: (): CacheEffect => lessonMutationEffects(),
+  bookingWrite: (assignmentId?: string): CacheEffect =>
+    lessonMutationEffects(assignmentId),
+  lifecycleWrite: (assignmentId?: string): CacheEffect =>
+    lessonMutationEffects(assignmentId),
+  planWrite: (assignmentId?: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...lessonMutationEffects(assignmentId).invalidate,
+        ...allContractSeries(),
+      ],
+    }),
+  availabilityCommit: (assignmentId?: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...bothCalendars(),
+        everyLearnerSlot(),
+        ...commercialReadEffects(assignmentId),
+        ...allContractSeries(),
+      ],
+    }),
+  outcomeWrite: (assignmentId?: string): CacheEffect =>
+    lessonMutationEffects(assignmentId),
+  settlementWrite: (assignmentId?: string): CacheEffect =>
+    lessonMutationEffects(assignmentId),
+  correctionWrite: (assignmentId?: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...lessonMutationEffects(assignmentId).invalidate,
+        ...allContractSeries(),
+      ],
+    }),
+  // Logout, expiry, cross-tab logout, a session 401, and account replacement all end the right to read that persona cache.
+  // The session entry survives removal because its caller writes the replacing session value into it.
+  personaCleared: (role: PersonaRole): CacheEffect =>
+    effect({
+      cancel: [{ queryKey: queryKeys.persona(role) }],
+      remove: [
+        {
+          queryKey: queryKeys.persona(role),
+          predicate: (query) => query.queryKey[2] !== "session",
+        },
+      ],
+    }),
+};

@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/balickim/nutka/apps/backend/internal/authconfig"
-	"github.com/balickim/nutka/apps/backend/internal/scheduling"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
@@ -29,12 +27,11 @@ func registerSeedAssignmentCommand(app *pocketbase.PocketBase) {
 		return
 	}
 	var teacher, learner string
-	var duration int
 	command := &cobra.Command{Use: "seed-assignment", Short: "Assign a local teacher to a learner", RunE: func(cmd *cobra.Command, _ []string) error {
 		if teacher == "" || learner == "" {
 			return errors.New("teacher and learner are required")
 		}
-		if err := seedAssignmentCommand(app, teacher, learner, duration); err != nil {
+		if err := seedAssignmentCommand(app, teacher, learner); err != nil {
 			return err
 		}
 		_, err := fmt.Fprintf(cmd.OutOrStdout(), "seeded assignment %s -> %s\n", teacher, learner)
@@ -42,7 +39,6 @@ func registerSeedAssignmentCommand(app *pocketbase.PocketBase) {
 	}}
 	command.Flags().StringVar(&teacher, "teacher", "", "teacher id or email")
 	command.Flags().StringVar(&learner, "learner", "", "learner id or email")
-	command.Flags().IntVar(&duration, "default-duration-minutes", 0, "default lesson duration")
 	app.RootCmd.AddCommand(command)
 }
 
@@ -82,7 +78,7 @@ func seedTeacher(app core.App, email, password, name string) error {
 	return seedPersona(app, authconfig.TeachersCollectionName, email, password, name)
 }
 
-func seedAssignmentCommand(app core.App, teacherRef, learnerRef string, duration int) error {
+func seedAssignmentCommand(app core.App, teacherRef, learnerRef string) error {
 	teacher, err := findSeedAccount(app, authconfig.TeachersCollectionName, teacherRef)
 	if err != nil {
 		return err
@@ -90,12 +86,6 @@ func seedAssignmentCommand(app core.App, teacherRef, learnerRef string, duration
 	learner, err := findSeedAccount(app, authconfig.LearnersCollectionName, learnerRef)
 	if err != nil {
 		return err
-	}
-	if duration == 0 {
-		duration = int(scheduling.DefaultLessonDuration / time.Minute)
-	}
-	if err := scheduling.ValidateAssignmentDuration(time.Duration(duration) * time.Minute); err != nil {
-		return fmt.Errorf("invalid default duration: %w", err)
 	}
 	assignments, err := app.FindAllRecords(schedulingstore.TeacherLearnersCollectionName, dbx.HashExp{"teacher": teacher.Id, "learner": learner.Id})
 	if err != nil {
@@ -112,7 +102,6 @@ func seedAssignmentCommand(app core.App, teacherRef, learnerRef string, duration
 	row.Set("teacher", teacher.Id)
 	row.Set("learner", learner.Id)
 	row.Set(schedulingstore.ActiveField, true)
-	row.Set(schedulingstore.DefaultDurationMinutesField, duration)
 	if err := app.Save(row); err != nil {
 		return fmt.Errorf("save assignment: %w", err)
 	}

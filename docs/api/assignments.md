@@ -1,6 +1,6 @@
 # Assignments API
 
-The assignments API exposes private teacher–learner assignments.
+The assignments API exposes private teacher–learner assignments and concise commercial summaries.
 
 ## Common rules
 
@@ -8,9 +8,10 @@ The assignments API exposes private teacher–learner assignments.
 - Learner requests use the learner session cookie.
 - A response contains only assignments owned by the resolved account.
 - Assignment identifiers are opaque strings.
-- New assignments use `active: true` and `default_duration_minutes: 45`.
-- Durations are positive multiples of 15 minutes.
+- New assignments use `active: true`.
+- Assignments do not expose or accept a lesson duration.
 - Mutations require `X-Requested-With: fetch`.
+- Request identity fields are rejected.
 - See [scheduling errors](errors.md) for the error contract.
 
 ## Read assignments
@@ -29,31 +30,68 @@ The assignments API exposes private teacher–learner assignments.
   "teacher_name": "Test Teacher",
   "learner": "learner-id",
   "learner_name": "Test Learner",
-  "active": true,
-  "default_duration_minutes": 45
+  "active": true
 }
 ```
 
 Teacher responses include active and inactive assignments. Learner responses include active and inactive assignments.
 Names appear only for the authorized assignment. Assignment responses never include email addresses.
 
-## Change assignment
+## Read a commercial summary
+
+| Method | Path | Auth | Response |
+| --- | --- | --- | --- |
+| `GET` | `/api/teachers/assignments/{id}/commercial-summary` | Assigned teacher | `CommercialSummary` |
+| `GET` | `/api/learners/assignments/{id}/commercial-summary` | Assigned learner | `CommercialSummary` |
+
+The summary contains only assignment-owned data:
+
+```json
+{
+  "assignment": "assignment-id",
+  "active_plan": "package",
+  "package": {
+    "id": "package-id",
+    "valid_through": "2030-11-11",
+    "token_balance": {
+      "available": 2,
+      "reserved": 1,
+      "used": 1,
+      "expired": 0,
+      "invalidated": 0
+    }
+  },
+  "contract": null,
+  "payments": {
+    "pending": 0,
+    "intentionally_unpaid": 0,
+    "overdue": 0,
+    "credit_minor": 0,
+    "currency": "PLN"
+  }
+}
+```
+
+`active_plan` is `regular_contract`, `package`, or `ad_hoc`, or `null` when no current obligation exists.
+Contract summaries expose status, start date, effective end date, unit price, currency, remaining monthly reschedules, and remaining free cancellations.
+Learner summaries omit teacher-only notes and unrelated financial records.
+
+## Change assignment activity
 
 | Method | Path | Auth | Response |
 | --- | --- | --- | --- |
 | `PATCH` | `/api/teachers/assignments/{id}` | Assigned teacher | `Assignment` |
 
-The request body accepts one or both fields:
+The request body accepts only `active`:
 
 ```json
 {
-  "active": false,
-  "default_duration_minutes": 60
+  "active": false
 }
 ```
 
-The request must contain at least one supported field. The server rejects caller-supplied identity fields. A learner cannot change an assignment.
+The body must contain one supported field. A learner cannot change assignment activity.
 
-The body cannot contain `teacher`, `learner`, `actor_id`, or `actor_role`.
-
-Deactivating an assignment blocks new bookings and retains existing lesson history.
+Deactivation blocks new bookings and retains lessons, plans, charges, payments, and history.
+The server rejects deactivation while an active contract, open package token, package-backed future lesson, or future scheduled lesson remains.
+Historical unpaid obligations do not alone block deactivation.

@@ -11,7 +11,7 @@ async function mockEmptyLearnerCalendar(page: Page) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ assignments: [], availability_rules: [], availability_exceptions: [], lessons: [], cancellation_counters: { teacher: 0, learner: 0 } }),
+      body: JSON.stringify({ assignments: [], availability_rules: [], availability_exceptions: [], commercial_summaries: [], near_term_lessons: [], payment_summary: [], history_summary: [] }),
     }),
   );
 }
@@ -21,6 +21,17 @@ const learner = {
   email: "learner@example.test",
   name: "Test Learner",
 };
+
+const policy = {
+  version: "v1", currency: "PLN", ad_hoc_price_minor: 8000, package_price_minor: 26000, regular_lesson_price_minor: 5000,
+  lesson_duration_minutes: 45, start_grid_minutes: 15, participant_buffer_minutes: 5, learner_booking_minimum_hours: 24, learner_change_cutoff_hours: 24,
+  booking_horizon_days: 14, package_token_count: 4, package_validity_days: 60, teacher_cancellation_extension_days: 7, contract_monthly_reschedules: 1,
+  contract_free_cancellations: 2, contract_replacement_deadline_days: 30, monthly_payment_due_day: 5, contract_end_month: 6, contract_end_day: 30,
+};
+
+async function mockLearnerPolicy(page: Page) {
+  await page.route("**/api/learners/business-policy", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(policy) }));
+}
 
 test("unauthenticated learners are sent to login", async ({ page }) => {
   await mockUnauthenticated(page);
@@ -49,6 +60,7 @@ test("successful login reaches the learner home and logout returns to login", as
     route.fulfill(authenticated ? { status: 200, body: JSON.stringify({ record: learner }) } : { status: 401, body: "{}" }),
   );
   await mockEmptyLearnerCalendar(page);
+  await mockLearnerPolicy(page);
   await page.route("**/api/health", (route) => route.fulfill({ status: 200, body: "{}" }));
   await page.route("**/api/collections/learners/auth-with-password", async (route) => {
     authenticated = true;
@@ -76,6 +88,7 @@ test("an expired server session returns to login", async ({ page }) => {
     }),
   );
   await mockEmptyLearnerCalendar(page);
+  await mockLearnerPolicy(page);
   await page.route("**/api/health", (route) => route.fulfill({ status: 200, body: "{}" }));
   await page.goto("/learners/calendar");
   await expect(page.getByRole("heading", { name: /Cześć, Test Learner/ })).toBeVisible();
@@ -90,6 +103,8 @@ test("logout synchronizes across learner tabs without sharing session data", asy
   await second.route("**/api/learners/auth/me", (route) => route.fulfill({ status: 200, body: JSON.stringify({ record: learner }) }));
   await mockEmptyLearnerCalendar(first);
   await mockEmptyLearnerCalendar(second);
+  await mockLearnerPolicy(first);
+  await mockLearnerPolicy(second);
   for (const page of [first, second]) {
     await page.route("**/api/health", (route) => route.fulfill({ status: 200, body: "{}" }));
   }
