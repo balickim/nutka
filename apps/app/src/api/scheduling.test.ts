@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiRequestError } from "./transport";
-import { bookLesson, getSchedulingErrorMessage, ownCancellationCount, rescheduleLesson } from "./scheduling";
+import { bookLesson, getSchedulingErrorMessage, rescheduleLesson } from "./scheduling";
 
 describe("scheduling endpoints", () => {
   beforeEach(() => vi.restoreAllMocks());
@@ -15,22 +15,18 @@ describe("scheduling endpoints", () => {
     expect(JSON.parse(String(options.body))).toEqual({ start_at: "2026-01-15T12:00:00Z" });
   });
 
-  it("allows teacher duration-only reschedule payloads", async () => {
+  it("uses the fixed-duration reschedule payload", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "lesson-1" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    await rescheduleLesson("teacher", "lesson-1", { duration_minutes: 60 });
+    await rescheduleLesson("teacher", "lesson-1", { start_at: "2026-01-16T12:00:00Z" });
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/teachers/lessons/lesson-1/reschedule");
-    expect(JSON.parse(String(options.body))).toEqual({ duration_minutes: 60 });
+    expect(options.method).toBe("POST");
+    expect(JSON.parse(String(options.body))).toEqual({ start_at: "2026-01-16T12:00:00Z" });
   });
 
   it("maps stable API error codes to Polish UI copy without rendering server text", () => {
     expect(getSchedulingErrorMessage(new ApiRequestError({ code: "conflict", message: "The interval conflicts." }, 409))).toContain("termin");
     expect(getSchedulingErrorMessage(new ApiRequestError({ code: "unknown_code", message: "English server detail" }, 500))).toBe("Nie udało się wykonać operacji.");
-  });
-
-  it("reads only the matching initiator counter", () => {
-    expect(ownCancellationCount({ teacher: 2, learner: 5 }, "teacher")).toBe(2);
-    expect(ownCancellationCount({ teacher: 2, learner: 5 }, "learner")).toBe(5);
   });
 });

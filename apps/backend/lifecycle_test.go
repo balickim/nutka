@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/balickim/nutka/apps/backend/internal/authconfig"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -31,11 +31,7 @@ func TestLessonBookingLifecycleRetainsEventsAndAttribution(t *testing.T) {
 		local = local.AddDate(0, 0, 1)
 	}
 	start := time.Date(local.Year(), local.Month(), local.Day(), 10, 0, 0, 0, zone).UTC()
-	weekday := int(local.Weekday())
-	rule := request(t, server, http.MethodPost, "/api/teachers/availability/rules", `{"weekday":`+strconv.Itoa(weekday)+`,"start_time":"09:00","end_time":"12:00"}`, teacherCookie, true)
-	if rule.Code != http.StatusCreated {
-		t.Fatalf("rule failed: %d %s", rule.Code, rule.Body.String())
-	}
+	createAvailabilityRule(t, server, teacherCookie, start)
 
 	booking := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"`+start.Format(time.RFC3339)+`"}`, learnerCookie, true)
 	if booking.Code != http.StatusCreated || !strings.Contains(booking.Body.String(), `"duration_minutes":45`) {
@@ -49,34 +45,28 @@ func TestLessonBookingLifecycleRetainsEventsAndAttribution(t *testing.T) {
 	if created.GetString(schedulingstore.KindField) != "created" || created.GetString(schedulingstore.InitiatorRoleField) != "learner" || created.GetDateTime(schedulingstore.NewStartAtField).Time().UTC() != start {
 		t.Fatalf("creation snapshot: %v", created.Original())
 	}
-	if empty := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{}`, teacherCookie, true); empty.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 1 {
+	if empty := request(t, server, http.MethodPost, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{}`, teacherCookie, true); empty.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 1 {
 		t.Fatalf("empty teacher reschedule changed history: %d %s", empty.Code, empty.Body.String())
 	}
-	if inactive := request(t, server, http.MethodPatch, "/api/teachers/assignments/"+assignment.Id, `{"active":false}`, teacherCookie, true); inactive.Code != http.StatusOK {
-		t.Fatalf("deactivate assignment: %d %s", inactive.Code, inactive.Body.String())
-	}
-	if blocked := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+start.Add(15*time.Minute).Format(time.RFC3339)+`"}`, teacherCookie, true); blocked.Code != http.StatusForbidden {
-		t.Fatalf("inactive assignment allowed reschedule: %d %s", blocked.Code, blocked.Body.String())
-	}
-	if active := request(t, server, http.MethodPatch, "/api/teachers/assignments/"+assignment.Id, `{"active":true}`, teacherCookie, true); active.Code != http.StatusOK {
-		t.Fatalf("reactivate assignment: %d %s", active.Code, active.Body.String())
+	if inactive := request(t, server, http.MethodPatch, "/api/teachers/assignments/"+assignment.Id, `{"active":false}`, teacherCookie, true); inactive.Code != http.StatusConflict || !strings.Contains(inactive.Body.String(), `"code":"unresolved_obligation"`) {
+		t.Fatalf("future lesson did not block deactivation: %d %s", inactive.Code, inactive.Body.String())
 	}
 
 	newStart := start.Add(15 * time.Minute)
-	reschedule := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+newStart.Format(time.RFC3339)+`","duration_minutes":60}`, teacherCookie, true)
-	if reschedule.Code != http.StatusOK || !strings.Contains(reschedule.Body.String(), `"duration_minutes":60`) {
+	reschedule := request(t, server, http.MethodPost, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+newStart.Format(time.RFC3339)+`"}`, teacherCookie, true)
+	if reschedule.Code != http.StatusOK || !strings.Contains(reschedule.Body.String(), `"duration_minutes":45`) {
 		t.Fatalf("reschedule failed: %d %s", reschedule.Code, reschedule.Body.String())
 	}
 	if events := countEvents(t, app, lesson.Id); events != 2 {
 		t.Fatalf("reschedule event count: %d", events)
 	}
 	rescheduled := lessonEvents(t, app, lesson.Id)[1]
-	if rescheduled.GetDateTime(schedulingstore.PriorStartAtField).Time().UTC() != start || rescheduled.GetDateTime(schedulingstore.NewStartAtField).Time().UTC() != newStart || rescheduled.GetInt(schedulingstore.PriorDurationMinutesField) != 45 || rescheduled.GetInt(schedulingstore.NewDurationMinutesField) != 60 {
+	if rescheduled.GetDateTime(schedulingstore.PriorStartAtField).Time().UTC() != start || rescheduled.GetDateTime(schedulingstore.NewStartAtField).Time().UTC() != newStart || rescheduled.GetInt(schedulingstore.PriorDurationMinutesField) != 45 || rescheduled.GetInt(schedulingstore.NewDurationMinutesField) != 45 {
 		t.Fatalf("reschedule snapshot: %v", rescheduled.Original())
 	}
 
 	cancel := request(t, server, http.MethodPost, "/api/learners/lessons/"+lesson.Id+"/cancel", "{}", learnerCookie, true)
-	if cancel.Code != http.StatusOK || !strings.Contains(cancel.Body.String(), `"status":"cancelled"`) || !strings.Contains(cancel.Body.String(), `"cancellation_initiator_role":"learner"`) {
+	if cancel.Code != http.StatusOK || !strings.Contains(cancel.Body.String(), `"schedule_state":"cancelled"`) || !strings.Contains(cancel.Body.String(), `"cancellation_initiator_role":"learner"`) {
 		t.Fatalf("cancellation failed: %d %s", cancel.Code, cancel.Body.String())
 	}
 	if events := countEvents(t, app, lesson.Id); events != 3 {
@@ -86,9 +76,57 @@ func TestLessonBookingLifecycleRetainsEventsAndAttribution(t *testing.T) {
 	if cancelled.GetString(schedulingstore.KindField) != "cancelled" || cancelled.GetString(schedulingstore.InitiatorIDField) != learnerID || cancelled.GetDateTime(schedulingstore.PriorStartAtField).Time().UTC() != newStart || !cancelled.GetDateTime(schedulingstore.NewStartAtField).Time().IsZero() {
 		t.Fatalf("cancellation snapshot: %v", cancelled.Original())
 	}
-	counters := request(t, server, http.MethodGet, "/api/learners/cancellation-counters", "", learnerCookie, false)
-	if counters.Code != http.StatusOK || !strings.Contains(counters.Body.String(), `"learner":1`) {
-		t.Fatalf("counter failed: %d %s", counters.Code, counters.Body.String())
+}
+
+func TestLearnerAdHocCancellationUpgradesLegacyZeroAmountSchema(t *testing.T) {
+	now := time.Date(2030, time.January, 1, 9, 0, 0, 0, time.UTC)
+	app, server := newTestServerWithClock(t, func() time.Time { return now })
+	seedTestTeacher(t, app, true)
+	seedTestLearner(t, app, true)
+	teacherID := findID(t, app, authconfig.TeachersCollectionName, "teacher@example.test")
+	learnerID := findID(t, app, authconfig.LearnersCollectionName, "learner@example.test")
+	assignment := seedLessonAssignment(t, app, teacherID, learnerID)
+	teacherCookie := loginCookie(t, server, "/api/collections/teachers/auth-with-password", "teacher@example.test")
+	learnerCookie := loginCookie(t, server, "/api/collections/learners/auth-with-password", "learner@example.test")
+	start := now.Add(48 * time.Hour)
+	if response := createAvailabilityException(t, server, teacherCookie, start, start.Add(time.Hour), "available"); response.Code != http.StatusOK {
+		t.Fatalf("availability: %d %s", response.Code, response.Body.String())
+	}
+	booking := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"`+start.Format(time.RFC3339)+`"}`, learnerCookie, true)
+	if booking.Code != http.StatusCreated {
+		t.Fatalf("booking: %d %s", booking.Code, booking.Body.String())
+	}
+	lesson := firstLesson(t, app)
+
+	for collectionName, fieldName := range map[string]string{
+		schedulingstore.ChargesCollectionName:          schedulingstore.CurrentAmountMinorField,
+		schedulingstore.FinancialEntriesCollectionName: schedulingstore.AmountMinorField,
+	} {
+		collection, err := app.FindCollectionByNameOrId(collectionName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		collection.Fields.GetByName(fieldName).(*core.NumberField).Required = true
+		if err := app.Save(collection); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := app.DB().NewQuery("DELETE FROM {{_migrations}} WHERE [[file]] = {:file}").Bind(dbx.Params{
+		"file": "1788700000_allow_zero_commercial_amounts.go",
+	}).Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.RunAppMigrations(); err != nil {
+		t.Fatal(err)
+	}
+
+	cancellation := request(t, server, http.MethodPost, "/api/learners/lessons/"+lesson.Id+"/cancel", `{}`, learnerCookie, true)
+	if cancellation.Code != http.StatusOK {
+		t.Fatalf("cancellation: %d %s", cancellation.Code, cancellation.Body.String())
+	}
+	charge, err := app.FindFirstRecordByData(schedulingstore.ChargesCollectionName, schedulingstore.SourceIDField, lesson.Id)
+	if err != nil || charge.GetInt(schedulingstore.CurrentAmountMinorField) != 0 || charge.GetString(schedulingstore.SettlementStateField) != "not_applicable" {
+		t.Fatalf("cancelled charge: %v %v", charge, err)
 	}
 }
 
@@ -109,17 +147,17 @@ func TestLifecyclePersonaRescheduleContracts(t *testing.T) {
 	}
 	lesson := firstLesson(t, app)
 	newStart := start.Add(15 * time.Minute)
-	if response := request(t, server, http.MethodPatch, "/api/learners/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+newStart.Format(time.RFC3339)+`"}`, learnerCookie, true); response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"duration_minutes":45`) {
+	if response := request(t, server, http.MethodPost, "/api/learners/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+newStart.Format(time.RFC3339)+`"}`, learnerCookie, true); response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"duration_minutes":45`) {
 		t.Fatalf("learner reschedule: %d %s", response.Code, response.Body.String())
 	}
-	if response := request(t, server, http.MethodPatch, "/api/learners/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+start.Add(30*time.Minute).Format(time.RFC3339)+`","duration_minutes":60}`, learnerCookie, true); response.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 2 {
+	if response := request(t, server, http.MethodPost, "/api/learners/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+start.Add(30*time.Minute).Format(time.RFC3339)+`","duration_minutes":60}`, learnerCookie, true); response.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 2 {
 		t.Fatalf("learner duration override changed state: %d %s", response.Code, response.Body.String())
 	}
-	if response := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"duration_minutes":60}`, teacherCookie, true); response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"duration_minutes":60`) {
-		t.Fatalf("teacher duration-only reschedule: %d %s", response.Code, response.Body.String())
+	if response := request(t, server, http.MethodPost, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"duration_minutes":60}`, teacherCookie, true); response.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 2 {
+		t.Fatalf("teacher duration-only override changed state: %d %s", response.Code, response.Body.String())
 	}
 	stored, _ := app.FindRecordById(schedulingstore.LessonsCollectionName, lesson.Id)
-	if response := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"duration_minutes":50}`, teacherCookie, true); response.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 3 || stored.GetInt(schedulingstore.DurationMinutesField) != 60 {
+	if response := request(t, server, http.MethodPost, "/api/teachers/lessons/"+lesson.Id+"/reschedule", `{"duration_minutes":50}`, teacherCookie, true); response.Code != http.StatusBadRequest || countEvents(t, app, lesson.Id) != 2 || stored.GetInt(schedulingstore.DurationMinutesField) != 45 {
 		t.Fatalf("invalid teacher duration changed state: %d %s", response.Code, response.Body.String())
 	}
 }
@@ -175,18 +213,53 @@ func TestBookingUsesInjectedClockForGridHorizonAndAvailabilityFit(t *testing.T) 
 	assignment := seedLessonAssignment(t, app, teacherID, learnerID)
 	teacherCookie := loginCookie(t, server, "/api/collections/teachers/auth-with-password", "teacher@example.test")
 	learnerCookie := loginCookie(t, server, "/api/collections/learners/auth-with-password", "learner@example.test")
-	available := request(t, server, http.MethodPost, "/api/teachers/availability/exceptions", `{"start_at":"2030-01-02T09:00:00Z","end_at":"2030-01-02T10:00:00Z","kind":"available"}`, teacherCookie, true)
-	if available.Code != http.StatusCreated {
+	available := createAvailabilityException(t, server, teacherCookie, time.Date(2030, 1, 2, 9, 0, 0, 0, time.UTC), time.Date(2030, 1, 2, 10, 0, 0, 0, time.UTC), "available")
+	if available.Code != http.StatusOK {
 		t.Fatalf("available exception: %d %s", available.Code, available.Body.String())
 	}
 	if response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"2030-01-02T09:07:00Z"}`, learnerCookie, true); response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"invalid_grid"`) {
 		t.Fatalf("off-grid booking: %d %s", response.Code, response.Body.String())
 	}
-	if response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"2030-01-15T09:00:00Z"}`, learnerCookie, true); response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"horizon"`) {
+	if response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"2030-01-15T09:15:00Z"}`, learnerCookie, true); response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"horizon"`) {
 		t.Fatalf("horizon booking: %d %s", response.Code, response.Body.String())
 	}
-	if response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"2030-01-02T09:30:00Z"}`, learnerCookie, true); response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), `"code":"conflict"`) {
+	if response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"2030-01-02T09:30:00Z"}`, learnerCookie, true); response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), `"code":"lesson_conflict"`) {
 		t.Fatalf("availability-fit booking: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestFlexibleBookingHTTPAcceptsExactBoundsAndRequiresTeacherShortNoticeConfirmation(t *testing.T) {
+	now := time.Date(2030, time.January, 1, 9, 0, 0, 0, time.UTC)
+	app, server := newTestServerWithClock(t, func() time.Time { return now })
+	seedTestTeacher(t, app, true)
+	seedTestLearner(t, app, true)
+	teacherID := findID(t, app, authconfig.TeachersCollectionName, "teacher@example.test")
+	learnerID := findID(t, app, authconfig.LearnersCollectionName, "learner@example.test")
+	assignment := seedLessonAssignment(t, app, teacherID, learnerID)
+	teacherCookie := loginCookie(t, server, "/api/collections/teachers/auth-with-password", "teacher@example.test")
+	learnerCookie := loginCookie(t, server, "/api/collections/learners/auth-with-password", "learner@example.test")
+	for _, start := range []time.Time{now.Add(time.Hour), now.Add(24 * time.Hour), now.Add(14 * 24 * time.Hour)} {
+		createAvailabilityException(t, server, teacherCookie, start, start.Add(time.Hour), "available")
+	}
+	shortPath := "/api/teachers/assignments/" + assignment.Id + "/book"
+	shortBody := `{"start_at":"` + now.Add(time.Hour).Format(time.RFC3339) + `"}`
+	if response := request(t, server, http.MethodPost, shortPath, shortBody, teacherCookie, true); response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"short_notice_confirmation_required"`) {
+		t.Fatalf("unconfirmed teacher short notice: %d %s", response.Code, response.Body.String())
+	}
+	confirmedBody := `{"start_at":"` + now.Add(time.Hour).Format(time.RFC3339) + `","confirm_short_notice":true}`
+	if response := request(t, server, http.MethodPost, shortPath, confirmedBody, teacherCookie, true); response.Code != http.StatusCreated {
+		t.Fatalf("confirmed teacher short notice: %d %s", response.Code, response.Body.String())
+	}
+	learnerPath := "/api/learners/assignments/" + assignment.Id + "/book"
+	for _, start := range []time.Time{now.Add(24 * time.Hour), now.Add(14 * 24 * time.Hour)} {
+		body := `{"start_at":"` + start.Format(time.RFC3339) + `"}`
+		if response := request(t, server, http.MethodPost, learnerPath, body, learnerCookie, true); response.Code != http.StatusCreated {
+			t.Fatalf("exact learner boundary %s: %d %s", start, response.Code, response.Body.String())
+		}
+	}
+	beyondBody := `{"start_at":"` + now.Add(14*24*time.Hour+15*time.Minute).Format(time.RFC3339) + `","confirm_short_notice":true}`
+	if response := request(t, server, http.MethodPost, shortPath, beyondBody, teacherCookie, true); response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"horizon"`) {
+		t.Fatalf("teacher horizon: %d %s", response.Code, response.Body.String())
 	}
 }
 
@@ -210,6 +283,7 @@ func TestLifecycleRejectsImmutableAndCancelledLessons(t *testing.T) {
 	} {
 		lesson := seedScheduledLesson(t, app, assignment.Id, teacherID, learnerID, fixture.start)
 		lesson.Set(schedulingstore.StatusField, fixture.status)
+		lesson.Set(schedulingstore.ScheduleStateField, fixture.status)
 		if err := app.Save(lesson); err != nil {
 			t.Fatal(err)
 		}
@@ -220,7 +294,7 @@ func TestLifecycleRejectsImmutableAndCancelledLessons(t *testing.T) {
 			if rolePath == "learners" {
 				cookie = learnerCookie
 			}
-			reschedule := request(t, server, http.MethodPatch, "/api/"+rolePath+"/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+fixture.start.Add(time.Hour).Format(time.RFC3339)+`"}`, cookie, true)
+			reschedule := request(t, server, http.MethodPost, "/api/"+rolePath+"/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+fixture.start.Add(time.Hour).Format(time.RFC3339)+`"}`, cookie, true)
 			cancel := request(t, server, http.MethodPost, "/api/"+rolePath+"/lessons/"+lesson.Id+"/cancel", `{}`, cookie, true)
 			if reschedule.Code != http.StatusConflict || cancel.Code != http.StatusConflict {
 				t.Fatalf("%s %s mutation accepted: reschedule=%d cancel=%d", fixture.name, rolePath, reschedule.Code, cancel.Code)
@@ -233,7 +307,7 @@ func TestLifecycleRejectsImmutableAndCancelledLessons(t *testing.T) {
 	}
 }
 
-func TestCancellationCountersAndCancelledIntervalReuse(t *testing.T) {
+func TestCancelledIntervalCanBeReusedWithoutGenericCounters(t *testing.T) {
 	app, server := newTestServer(t)
 	seedTestTeacher(t, app, true)
 	seedTestLearner(t, app, true)
@@ -261,27 +335,19 @@ func TestCancellationCountersAndCancelledIntervalReuse(t *testing.T) {
 	if rebook.Code != http.StatusCreated {
 		t.Fatalf("cancelled interval was not reusable: %d %s", rebook.Code, rebook.Body.String())
 	}
-	if response := request(t, server, http.MethodPatch, "/api/teachers/lessons/"+lessons[1].Id+"/reschedule", `{"start_at":"`+secondStart.Add(15*time.Minute).Format(time.RFC3339)+`"}`, teacherCookie, true); response.Code != http.StatusOK {
+	if response := request(t, server, http.MethodPost, "/api/teachers/lessons/"+lessons[1].Id+"/reschedule", `{"start_at":"`+secondStart.Add(15*time.Minute).Format(time.RFC3339)+`"}`, teacherCookie, true); response.Code != http.StatusOK {
 		t.Fatalf("reschedule: %d %s", response.Code, response.Body.String())
 	}
 	if response := request(t, server, http.MethodPost, "/api/learners/lessons/"+lessons[1].Id+"/cancel", `{}`, learnerCookie, true); response.Code != http.StatusOK {
 		t.Fatalf("learner cancellation: %d %s", response.Code, response.Body.String())
 	}
-	teacherCounter := request(t, server, http.MethodGet, "/api/teachers/cancellation-counters", "", teacherCookie, false)
-	learnerCounter := request(t, server, http.MethodGet, "/api/learners/cancellation-counters", "", learnerCookie, false)
-	if teacherCounter.Code != http.StatusOK || !strings.Contains(teacherCounter.Body.String(), `"teacher":1`) || !strings.Contains(teacherCounter.Body.String(), `"learner":0`) {
-		t.Fatalf("teacher counter: %d %s", teacherCounter.Code, teacherCounter.Body.String())
-	}
-	if learnerCounter.Code != http.StatusOK || !strings.Contains(learnerCounter.Body.String(), `"learner":1`) || !strings.Contains(learnerCounter.Body.String(), `"teacher":0`) {
-		t.Fatalf("learner counter: %d %s", learnerCounter.Code, learnerCounter.Body.String())
-	}
 	teacherCalendar := request(t, server, http.MethodGet, "/api/teachers/calendar", "", teacherCookie, false)
 	learnerCalendar := request(t, server, http.MethodGet, "/api/learners/calendar", "", learnerCookie, false)
-	if teacherCalendar.Code != http.StatusOK || !strings.Contains(teacherCalendar.Body.String(), `"cancellation_counters":{"teacher":1,"learner":0}`) {
-		t.Fatalf("teacher calendar counter: %d %s", teacherCalendar.Code, teacherCalendar.Body.String())
+	if teacherCalendar.Code != http.StatusOK || strings.Contains(teacherCalendar.Body.String(), `"cancellation_counters"`) {
+		t.Fatalf("teacher calendar retained generic counters: %d %s", teacherCalendar.Code, teacherCalendar.Body.String())
 	}
-	if learnerCalendar.Code != http.StatusOK || !strings.Contains(learnerCalendar.Body.String(), `"cancellation_counters":{"teacher":0,"learner":1}`) {
-		t.Fatalf("learner calendar counter: %d %s", learnerCalendar.Code, learnerCalendar.Body.String())
+	if learnerCalendar.Code != http.StatusOK || strings.Contains(learnerCalendar.Body.String(), `"cancellation_counters"`) {
+		t.Fatalf("learner calendar retained generic counters: %d %s", learnerCalendar.Code, learnerCalendar.Body.String())
 	}
 }
 
@@ -323,7 +389,7 @@ func TestLifecycleRejectsInactiveUnownedAndUnknownCancellationFields(t *testing.
 		{path: "teachers", cookie: otherTeacherCookie},
 		{path: "learners", cookie: otherLearnerCookie},
 	} {
-		response := request(t, server, http.MethodPatch, "/api/"+fixture.path+"/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+start.Add(15*time.Minute).Format(time.RFC3339)+`"}`, fixture.cookie, true)
+		response := request(t, server, http.MethodPost, "/api/"+fixture.path+"/lessons/"+lesson.Id+"/reschedule", `{"start_at":"`+start.Add(15*time.Minute).Format(time.RFC3339)+`"}`, fixture.cookie, true)
 		if response.Code != http.StatusForbidden {
 			t.Fatalf("unrelated %s mutation: %d %s", fixture.path, response.Code, response.Body.String())
 		}
@@ -343,7 +409,7 @@ func TestLearnerBookingRejectsDurationOverride(t *testing.T) {
 	learnerCookie := loginCookie(t, server, "/api/collections/learners/auth-with-password", "learner@example.test")
 	start := time.Now().UTC().Add(24 * time.Hour).Truncate(15 * time.Minute)
 	response := request(t, server, http.MethodPost, "/api/learners/assignments/"+assignment.Id+"/book", `{"start_at":"`+start.Format(time.RFC3339)+`","duration_minutes":60}`, learnerCookie, true)
-	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"invalid_request"`) {
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"duration_override"`) {
 		t.Fatalf("duration override accepted: %d %s", response.Code, response.Body.String())
 	}
 }

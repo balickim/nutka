@@ -50,7 +50,7 @@ describe("mutation cache rules", () => {
   beforeEach(() => { client = createAppQueryClient(); seed(); });
 
   it("refreshes both calendars and every learner slot after an availability write", async () => {
-    await applyCacheEffect(client, queryRules.availabilityWrite());
+    await applyCacheEffect(client, queryRules.availabilityCommit());
     expect(staleKeys()).toEqual([teacherCalendar, learnerCalendar, firstSlots, secondSlots].map((key) => JSON.stringify(key)).sort());
   });
 

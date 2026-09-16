@@ -2,21 +2,21 @@
 package schedulingapi
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
-	"github.com/balickim/nutka/apps/backend/internal/scheduling"
+	"github.com/balickim/nutka/apps/backend/internal/regularcontract"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type assignmentUpdate struct {
-	Active          *bool  `json:"active"`
-	DefaultDuration *int   `json:"default_duration_minutes"`
-	Teacher         string `json:"teacher"`
-	Learner         string `json:"learner"`
-	ActorID         string `json:"actor_id"`
-	ActorRole       string `json:"actor_role"`
+	Active    *bool  `json:"active"`
+	Teacher   string `json:"teacher"`
+	Learner   string `json:"learner"`
+	ActorID   string `json:"actor_id"`
+	ActorRole string `json:"actor_role"`
 }
 
 func assignments(e *core.RequestEvent) error {
@@ -44,6 +44,10 @@ func assignments(e *core.RequestEvent) error {
 }
 
 func teacherAssignmentUpdate(e *core.RequestEvent) error {
+	return teacherAssignmentUpdateAt(e, time.Now)
+}
+
+func teacherAssignmentUpdateAt(e *core.RequestEvent, clock Clock) error {
 	if err := requireMutation(e); err != nil {
 		return handleError(e, err)
 	}
@@ -55,25 +59,32 @@ func teacherAssignmentUpdate(e *core.RequestEvent) error {
 	if bindErr := bindBody(e, &input); bindErr != nil {
 		return handleError(e, bindErr)
 	}
-	if input.Active == nil && input.DefaultDuration == nil {
+	if input.Active == nil {
 		return handleError(e, errInvalid)
 	}
 	id := e.Request.PathValue("id")
 	var updated *core.Record
+	if clock == nil {
+		clock = time.Now
+	}
+	now := clock().UTC()
+	lessonMutationMu.Lock()
+	defer lessonMutationMu.Unlock()
 	err = e.App.RunInTransaction(func(tx core.App) error {
 		row, lookupErr := ownedAssignment(tx, id, "teacher", teacher.Id)
 		if lookupErr != nil {
 			return lookupErr
 		}
-		if input.DefaultDuration != nil {
-			if err := scheduling.ValidateAssignmentDuration(timeDurationMinutes(*input.DefaultDuration)); err != nil {
-				return errDuration
+		if !*input.Active && row.GetBool(schedulingstore.ActiveField) {
+			obligations, obligationErr := assignmentObligations(tx, row.Id, now)
+			if obligationErr != nil {
+				return obligationErr
 			}
-			row.Set(schedulingstore.DefaultDurationMinutesField, *input.DefaultDuration)
+			if err := regularcontract.CanDeactivateAssignment(obligations); err != nil {
+				return err
+			}
 		}
-		if input.Active != nil {
-			row.Set(schedulingstore.ActiveField, *input.Active)
-		}
+		row.Set(schedulingstore.ActiveField, *input.Active)
 		if saveErr := tx.Save(row); saveErr != nil {
 			return errInvalid
 		}
@@ -81,6 +92,9 @@ func teacherAssignmentUpdate(e *core.RequestEvent) error {
 		return nil
 	})
 	if err != nil {
+		if errors.Is(err, regularcontract.ErrAssignmentBlocked) {
+			return respond(e, http.StatusConflict, "unresolved_obligation", "A contract, token, package-backed lesson, or future lesson blocks deactivation.")
+		}
 		return handleError(e, err)
 	}
 	item, valueErr := assignmentValue(e.App, updated)
@@ -89,5 +103,3 @@ func teacherAssignmentUpdate(e *core.RequestEvent) error {
 	}
 	return e.JSON(http.StatusOK, item)
 }
-
-func timeDurationMinutes(minutes int) time.Duration { return time.Duration(minutes) * time.Minute }

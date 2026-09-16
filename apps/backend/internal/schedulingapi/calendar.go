@@ -3,16 +3,18 @@ package schedulingapi
 
 import (
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/balickim/nutka/apps/backend/internal/authconfig"
+	"github.com/balickim/nutka/apps/backend/internal/businesspolicy"
 	"github.com/balickim/nutka/apps/backend/internal/scheduling"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func teacherCalendar(e *core.RequestEvent) error {
+func teacherCalendar(e *core.RequestEvent) error { return teacherCalendarAt(e, time.Now) }
+
+func teacherCalendarAt(e *core.RequestEvent, clock Clock) error {
 	teacher, err := caller(e, "teacher")
 	if err != nil {
 		return handleError(e, err)
@@ -33,14 +35,16 @@ func teacherCalendar(e *core.RequestEvent) error {
 	if err != nil {
 		return handleError(e, err)
 	}
-	value, valueErr := calendarValue(e.App, assignments, enabledRules(rules), exceptions, lessons, teacher.Id, "teacher")
+	value, valueErr := calendarValue(e.App, assignments, enabledRules(rules), exceptions, lessons, "teacher", clock().UTC())
 	if valueErr != nil {
 		return handleError(e, valueErr)
 	}
 	return e.JSON(http.StatusOK, value)
 }
 
-func learnerCalendar(e *core.RequestEvent) error {
+func learnerCalendar(e *core.RequestEvent) error { return learnerCalendarAt(e, time.Now) }
+
+func learnerCalendarAt(e *core.RequestEvent, clock Clock) error {
 	learner, err := caller(e, "learner")
 	if err != nil {
 		return handleError(e, err)
@@ -74,9 +78,9 @@ func learnerCalendar(e *core.RequestEvent) error {
 		if queryErr != nil {
 			return handleError(e, queryErr)
 		}
-		exceptions = append(exceptions, rows...)
+		exceptions = append(exceptions, enabledExceptions(rows)...)
 	}
-	value, valueErr := calendarValue(e.App, assignments, rules, exceptions, lessons, learner.Id, "learner")
+	value, valueErr := calendarValue(e.App, assignments, rules, exceptions, lessons, "learner", clock().UTC())
 	if valueErr != nil {
 		return handleError(e, valueErr)
 	}
@@ -97,8 +101,16 @@ func learnerSlotsAt(e *core.RequestEvent, clock Clock) error {
 		return handleError(e, errForbidden)
 	}
 	teacherID := assignment.GetString("teacher")
-	duration := time.Duration(assignment.GetInt(schedulingstore.DefaultDurationMinutesField)) * time.Minute
-	slots, err := generateLearnerSlots(e.App, teacherID, learner.Id, duration, clock)
+	now := clock().UTC()
+	state, err := loadBookingState(e.App, assignment, now, now)
+	if err != nil {
+		return bookingError(e, err)
+	}
+	if state.contract != nil {
+		return e.JSON(http.StatusOK, map[string]any{"teacher": teacherID, "assignment": assignment.Id, "policy_version": businesspolicy.CurrentVersion, "slots": []slotDTO{}})
+	}
+	duration := businesspolicy.Current().LessonDuration
+	slots, err := generateLearnerSlots(e.App, teacherID, learner.Id, duration, func() time.Time { return now })
 	if err != nil {
 		if err == scheduling.ErrHorizon {
 			return handleError(e, errHorizon)
@@ -109,7 +121,7 @@ func learnerSlotsAt(e *core.RequestEvent, clock Clock) error {
 	for _, slot := range slots {
 		items = append(items, slotDTO{StartAt: utcString(slot.Interval.Start), EndAt: utcString(slot.Interval.End), Duration: int(duration / time.Minute), Protected: &protectedDTO{StartAt: utcString(slot.Protected.Start), EndAt: utcString(slot.Protected.End)}})
 	}
-	return e.JSON(http.StatusOK, map[string]any{"teacher": teacherID, "assignment": assignment.Id, "slots": items})
+	return e.JSON(http.StatusOK, map[string]any{"teacher": teacherID, "assignment": assignment.Id, "policy_version": businesspolicy.CurrentVersion, "slots": items})
 }
 
 func generateLearnerSlots(app core.App, teacherID, learnerID string, duration time.Duration, clock Clock) ([]scheduling.Slot, error) {
@@ -142,52 +154,4 @@ func generateLearnerSlots(app core.App, teacherID, learnerID string, duration ti
 		return nil, err
 	}
 	return scheduling.GenerateSlots(clock().UTC(), teacher.GetString(schedulingstore.TeacherTimezoneField), rules, exceptions, teacherID, learnerID, lessons, duration)
-}
-
-func calendarValue(app core.App, assignments, rules, exceptions, lessons []*core.Record, accountID, role string) (calendarDTO, error) {
-	result := calendarDTO{Assignments: make([]assignmentDTO, 0, len(assignments)), Rules: make([]ruleDTO, 0, len(rules)), Exceptions: make([]exceptionDTO, 0, len(exceptions)), Lessons: make([]lessonDTO, 0, len(lessons))}
-	for _, row := range assignments {
-		item, err := assignmentValue(app, row)
-		if err != nil {
-			return calendarDTO{}, err
-		}
-		result.Assignments = append(result.Assignments, item)
-	}
-	for _, row := range rules {
-		result.Rules = append(result.Rules, ruleValue(row))
-	}
-	for _, row := range exceptions {
-		result.Exceptions = append(result.Exceptions, exceptionValue(row))
-	}
-	for _, row := range lessons {
-		result.Lessons = append(result.Lessons, lessonValue(row))
-	}
-	result.Counters = cancellationCounters(lessons, accountID, role)
-	sort.Slice(result.Lessons, func(i, j int) bool { return result.Lessons[i].StartAt < result.Lessons[j].StartAt })
-	return result, nil
-}
-func enabledRules(rows []*core.Record) []*core.Record {
-	result := make([]*core.Record, 0, len(rows))
-	for _, row := range rows {
-		if row.GetBool(schedulingstore.EnabledField) {
-			result = append(result, row)
-		}
-	}
-	return result
-}
-func cancellationCounters(rows []*core.Record, accountID, role string) countersDTO {
-	result := countersDTO{}
-	for _, row := range rows {
-		if row.GetString(schedulingstore.StatusField) != "cancelled" || row.GetString(schedulingstore.CancellationInitiatorIDField) != accountID {
-			continue
-		}
-		if row.GetString(schedulingstore.CancellationInitiatorRoleField) == role {
-			if role == "teacher" {
-				result.Teacher++
-			} else {
-				result.Learner++
-			}
-		}
-	}
-	return result
 }

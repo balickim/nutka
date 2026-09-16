@@ -50,7 +50,11 @@ func validateAvailability(app core.App, now time.Time, interval scheduling.Inter
 	if err != nil {
 		return err
 	}
-	available, err := scheduling.EffectiveAvailability(now, scheduling.HorizonEnd(now), teacherRecord.GetString(schedulingstore.TeacherTimezoneField), rules, exceptions)
+	availabilityEnd := scheduling.HorizonEnd(now)
+	if interval.End.After(availabilityEnd) {
+		availabilityEnd = interval.End
+	}
+	available, err := scheduling.EffectiveAvailability(now, availabilityEnd, teacherRecord.GetString(schedulingstore.TeacherTimezoneField), rules, exceptions)
 	if err != nil {
 		return err
 	}

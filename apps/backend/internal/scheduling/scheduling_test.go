@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/balickim/nutka/apps/backend/internal/businesspolicy"
 )
 
 func utc(year int, month time.Month, day, hour, minute int) time.Time {
@@ -138,10 +140,10 @@ func TestGenerateSlotsUsesGridHorizonAndAvailabilityFit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(slots) != 11 {
-		t.Fatalf("expected eleven 45-minute starts across two Mondays, got %d", len(slots))
+	if len(slots) != 6 {
+		t.Fatalf("expected six 45-minute starts after the 24-hour minimum, got %d", len(slots))
 	}
-	if !slots[0].Interval.Start.Equal(utc(2026, time.January, 5, 9, 15)) || !slots[4].Interval.Start.Equal(utc(2026, time.January, 5, 10, 15)) {
+	if !slots[0].Interval.Start.Equal(utc(2026, time.January, 12, 9, 0)) || !slots[4].Interval.Start.Equal(utc(2026, time.January, 12, 10, 0)) {
 		t.Fatalf("unexpected slot bounds: %#v", slots)
 	}
 	if _, err := ValidateBookingStart(utc(2026, time.January, 5, 9, 16), now, 45*time.Minute); !errors.Is(err, ErrInvalidGrid) {
@@ -152,7 +154,7 @@ func TestGenerateSlotsUsesGridHorizonAndAvailabilityFit(t *testing.T) {
 	}
 	shortRule := NewWeekdayRule(time.Monday, 10*60+15, 11*60)
 	slots, err = GenerateSlots(now, "UTC", []WeekdayRule{shortRule}, nil, "teacher", "learner", nil, 45*time.Minute)
-	if err != nil || len(slots) != 2 || !slots[0].Interval.Start.Equal(utc(2026, time.January, 5, 10, 15)) {
+	if err != nil || len(slots) != 1 || !slots[0].Interval.Start.Equal(utc(2026, time.January, 12, 10, 15)) {
 		t.Fatalf("lesson must fit effective availability: %v %#v", err, slots)
 	}
 }
@@ -161,10 +163,59 @@ func TestValidateBookingStartRequiresCompleteHorizonFit(t *testing.T) {
 	now := utc(2026, time.January, 5, 9, 0)
 	boundary := HorizonEnd(now)
 	if _, err := ValidateBookingStart(boundary.Add(-45*time.Minute), now, 45*time.Minute); err != nil {
-		t.Fatalf("lesson ending exactly at horizon must be allowed: %v", err)
+		t.Fatalf("lesson starting before horizon must be allowed: %v", err)
 	}
-	if _, err := ValidateBookingStart(boundary, now, 15*time.Minute); !errors.Is(err, ErrHorizon) {
-		t.Fatalf("lesson extending beyond horizon must be rejected: %v", err)
+	if _, err := ValidateBookingStart(boundary, now, 15*time.Minute); err != nil {
+		t.Fatalf("horizon constrains start rather than end: %v", err)
+	}
+}
+
+func TestInjectedPolicyEnforcesMinimumAndStartHorizon(t *testing.T) {
+	policy := businesspolicy.Current()
+	now := utc(2026, time.January, 5, 9, 0)
+	intervalPolicy := IntervalPolicyFromBusinessPolicy(policy)
+	if _, err := ValidateBookingStart(now.Add(24*time.Hour), now, 0, intervalPolicy); err != nil {
+		t.Fatalf("exact booking minimum must be allowed: %v", err)
+	}
+	if _, err := ValidateBookingStart(now.Add(23*time.Hour+45*time.Minute), now, 0, intervalPolicy); !errors.Is(err, ErrHorizon) {
+		t.Fatalf("booking before minimum must be rejected: %v", err)
+	}
+	horizon := now.Add(14 * 24 * time.Hour)
+	if _, err := ValidateBookingStart(horizon, now, 0, intervalPolicy); err != nil {
+		t.Fatalf("exact start horizon must be allowed: %v", err)
+	}
+	if _, err := ValidateBookingStart(horizon.Add(15*time.Minute), now, 0, intervalPolicy); !errors.Is(err, ErrHorizon) {
+		t.Fatalf("start after horizon must be rejected: %v", err)
+	}
+}
+
+func TestInjectedPolicyUsesGridDurationAndBuffer(t *testing.T) {
+	policy := businesspolicy.Current()
+	policy.StartGrid = 30 * time.Minute
+	policy.LessonDuration = 60 * time.Minute
+	policy.ParticipantBuffer = 10 * time.Minute
+	policy.LearnerBookingMinimum = 0
+	now := utc(2026, time.January, 5, 9, 0)
+	interval, err := ValidateBookingStart(now.Add(30*time.Minute), now, 0, IntervalPolicyFromBusinessPolicy(policy))
+	if err != nil || interval.Duration() != time.Hour {
+		t.Fatalf("injected grid and duration must apply: %#v %v", interval, err)
+	}
+	if !interval.Protected(policy.ParticipantBuffer).Start.Equal(now.Add(20 * time.Minute)) {
+		t.Fatalf("injected buffer must apply: %#v", interval.Protected(policy.ParticipantBuffer))
+	}
+}
+
+func TestInjectedPolicyPreservesDSTAvailability(t *testing.T) {
+	policy := businesspolicy.Current()
+	policy.LearnerBookingMinimum = 0
+	now := utc(2025, time.March, 8, 0, 0)
+	rule := NewWeekdayRule(time.Sunday, 9*60, 10*60)
+	slots, err := GenerateSlots(now, "America/New_York", []WeekdayRule{rule}, nil, "teacher", "learner", nil, 0, IntervalPolicyFromBusinessPolicy(policy))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(slots) == 0 || !slots[0].Interval.Start.Equal(utc(2025, time.March, 9, 13, 0)) {
+		t.Fatalf("policy-aware slots must retain local DST schedule: %#v", slots)
 	}
 }
 

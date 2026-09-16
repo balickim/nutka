@@ -79,8 +79,12 @@ def is_source(path: str) -> bool:
 
 
 def tracked_sources() -> list[str]:
-    paths = run_git("ls-files", "-z").decode().split("\0")
-    return sorted(path for path in paths if path and is_source(path))
+    paths = run_git("ls-files", "--cached", "--others", "--exclude-standard", "-z").decode().split("\0")
+    return sorted(
+        path
+        for path in paths
+        if path and is_source(path) and (ROOT / path).is_file()
+    )
 
 
 def function_ids(functions: list[Any]) -> list[tuple[str, Any]]:

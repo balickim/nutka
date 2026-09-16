@@ -14,6 +14,8 @@ import (
 
 // RegisterHooks installs defaults and timezone validation for every application boot.
 func RegisterHooks(app core.App) {
+	registerCommercialHooks(app)
+	RegisterTimezoneGuard(app)
 	app.OnRecordCreate().Bind(&hook.Handler[*core.RecordEvent]{
 		Id: "nutkaSchedulingRecordDefaults",
 		Func: func(e *core.RecordEvent) error {
@@ -60,7 +62,7 @@ func defaultAssignment(record *core.Record) {
 	if !record.IsNew() {
 		return
 	}
-	if record.GetInt(DefaultDurationMinutesField) == 0 {
+	if record.Collection().Fields.GetByName(DefaultDurationMinutesField) != nil && record.GetInt(DefaultDurationMinutesField) == 0 {
 		record.Set(DefaultDurationMinutesField, int(scheduling.DefaultLessonDuration/time.Minute))
 	}
 	if !record.GetBool(ActiveField) {

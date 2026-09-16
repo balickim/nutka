@@ -49,14 +49,6 @@ export function ignoreWriteRejection(write: Promise<unknown>): Promise<void> {
   return write.then(() => undefined, () => undefined);
 }
 
-export function useAvailabilityWrite() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: (write: Write) => write(),
-    onSuccess: () => applyCacheEffect(client, queryRules.availabilityWrite()),
-  });
-}
-
 export function useAssignmentWrite() {
   const client = useQueryClient();
   return useMutation({

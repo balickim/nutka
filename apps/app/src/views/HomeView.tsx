@@ -1,79 +1,113 @@
-// Renders the learner calendar with assigned teachers, horizon slots, retained lessons, and learner-attributed cancellations.
+// Renders the learner's horizon calendar, commercial balances, plan-aware booking, notice, and redacted history.
 
 import { useEffect, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import {
-  bookLesson,
-  assignmentDisplayName,
-  ownCancellationCount,
-  type Assignment,
-  type CalendarResponse,
-  type Slot,
-} from "../api/scheduling";
+import { contractStatusCopy, planCopy, polishEvent, polishTokenState } from "../api/copy";
+import { bookFlexibleLesson, submitContractNotice } from "../api/commercial";
+import type { CommercialSummary, HistoryEvent, Policy } from "../api/contracts";
+import { assignmentDisplayName, type Assignment, type CalendarResponse, type Slot } from "../api/scheduling";
 import { authCopy } from "../auth/copy";
 import { authenticatedRecord, personaDisplayName, usePersonaLogout, usePersonaSession } from "../auth/session";
 import { ApiFeedback, EmptyState, LessonList } from "../components/ScheduleBits";
-import { ignoreWriteRejection, learnerCalendarQuery, useLearnerSlots, useLessonWrite } from "../query/scheduling";
+import { businessPolicyQuery, commercialSummaryQuery, historyQuery, useBookingMutation, usePlanMutation } from "../query/commercial";
+import { learnerCalendarQuery, useLearnerSlots } from "../query/scheduling";
 import { router } from "../router";
 import { formatScheduleDate, formatScheduleInstant, groupSlotsByLocalDate } from "../time/schedule";
 
 export function HomeView() {
   const session = usePersonaSession("learner");
   const record = authenticatedRecord(session.data);
-  const accountId = record?.id;
-  const calendar = useQuery(learnerCalendarQuery(accountId));
-  const activeAssignments = activeOf(calendar.data);
-  const slots = useLearnerSlots(accountId, activeAssignments);
+  const calendar = useQuery(learnerCalendarQuery(record?.id));
+  const policy = useQuery({ ...businessPolicyQuery("learner"), enabled: Boolean(record) });
+  const assignments = activeOf(calendar.data);
+  const slots = useLearnerSlots(record?.id, assignments);
   const logout = usePersonaLogout("learner");
-  const booking = useLessonWrite();
-  const [busy, setBusy] = useState<string | null>(null);
   const unauthenticated = session.data?.kind === "unauthenticated";
   useEffect(() => { if (unauthenticated) void router.navigate({ to: "/learners/login" }); }, [unauthenticated]);
   if (session.isError) return <SessionUnavailable onRetry={() => void session.refetch()} />;
   if (!record) return null;
-  const data = calendar.data;
-  const frame = (children: React.ReactNode) => <PanelFrame title={`Cześć, ${personaDisplayName(record)}.`} onLogout={() => void handleLogout()}>{children}</PanelFrame>;
   async function handleLogout() { await logout.mutateAsync(); await router.navigate({ to: "/learners/login" }); }
-  function retry() { void calendar.refetch(); slots.refetch(); }
-  async function book(assignmentId: string, slot: Slot) {
-    setBusy(`${assignmentId}:${slot.start_at}`);
-    await ignoreWriteRejection(booking.mutateAsync(() => bookLesson(assignmentId, { start_at: slot.start_at })));
-    setBusy(null);
+  const frame = (children: React.ReactNode) => <PanelFrame title={`Cześć, ${personaDisplayName(record)}.`} onLogout={() => void handleLogout()}>{children}</PanelFrame>;
+  const panelError = [calendar.error, policy.error, slots.error].find(Boolean);
+  if (panelError) return frame(<ApiFeedback error={panelError} onRetry={() => { void calendar.refetch(); void policy.refetch(); slots.refetch(); }} />);
+  if (!calendar.data || !policy.data || slots.pending) return frame(<p className="loading-state" role="status">Ładowanie kalendarza…</p>);
+  return frame(<LearnerDashboard accountId={record.id} calendar={calendar.data} assignments={assignments} slots={slots} policy={policy.data} />);
+}
+
+function LearnerDashboard({ accountId, calendar, assignments, slots, policy }: { accountId: string; calendar: CalendarResponse; assignments: Assignment[]; slots: ReturnType<typeof useLearnerSlots>; policy: Policy }) {
+  const names = new Map(calendar.assignments.map((assignment) => [assignment.teacher, assignmentDisplayName(assignment, "learner")]));
+  return <>
+    <section className="panel-section"><p className="eyebrow">nutka / uczeń</p><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Terminy obejmują starty w najbliższych {policy.booking_horizon_days} dniach. Lekcja trwa {policy.lesson_duration_minutes} minut, a kalendarz chroni dodatkowo {policy.participant_buffer_minutes} minut przed i po niej.</p></section>
+    <section className="panel-section"><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
+    <section className="panel-section"><h2>Lekcje w horyzoncie</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} counterpartNames={names} /></section>
+  </>;
+}
+
+function AssignmentCards({ accountId, assignments, slots, policy }: { accountId: string; assignments: Assignment[]; slots: ReturnType<typeof useLearnerSlots>; policy: Policy }) {
+  if (assignments.length === 0) return <EmptyState>Nie masz aktywnych przypisań.</EmptyState>;
+  return assignments.map((assignment) => <LearnerAssignmentCard key={assignment.id} accountId={accountId} assignment={assignment} slots={slots.slotsFor(assignment.id)} policy={policy} />);
+}
+
+function LearnerAssignmentCard({ accountId, assignment, slots, policy }: { accountId: string; assignment: Assignment; slots: Slot[]; policy: Policy }) {
+  const summary = useQuery(commercialSummaryQuery("learner", accountId, assignment.id));
+  const history = useQuery(historyQuery("learner", accountId, assignment.id));
+  const booking = useBookingMutation();
+  const plan = usePlanMutation();
+  const [busy, setBusy] = useState<string | null>(null);
+  async function book(slot: Slot) {
+    setBusy(slot.start_at);
+    try { await booking.mutateAsync({ assignmentId: assignment.id, write: () => bookFlexibleLesson("learner", assignment.id, { start_at: slot.start_at }) }); }
+    finally { setBusy(null); }
   }
-  const panelError = calendar.error || slots.error;
-  if (panelError) return frame(<ApiFeedback error={panelError} onRetry={retry} />);
-  if (!data || slots.pending) return frame(<p className="loading-state" role="status">Ładowanie kalendarza…</p>);
-  const teacherNames = new Map(data.assignments.map((assignment) => [assignment.teacher, assignmentDisplayName(assignment, "learner")]));
-  return frame(<>
-    <ApiFeedback error={booking.error} />
-    <section className="panel-section" aria-labelledby="learner-summary"><div className="section-heading"><div><p className="eyebrow">nutka / uczeń</p><h2 id="learner-summary">Twój kalendarz</h2></div><Counter value={ownCancellationCount(data.cancellation_counters, "learner")} label="Twoje odwołania" /></div><p className="supporting-copy">Wolne terminy obejmują dziś i kolejne 14 dni. Każda lekcja używa domyślnego czasu przypisania.</p></section>
-    <section className="panel-section" aria-labelledby="assigned-heading"><div className="section-heading"><h2 id="assigned-heading">Przypisani nauczyciele</h2></div><AssignmentGrid assignments={activeAssignments} slotsFor={slots.slotsFor} busy={busy} onBook={book} /></section>
-    <section className="panel-section" aria-labelledby="learner-lessons-heading"><div className="section-heading"><h2 id="learner-lessons-heading">Lekcje</h2></div><LessonList lessons={data.lessons} role="learner" counterpartNames={teacherNames} /></section>
-  </>);
+  async function notice() {
+    const contract = summary.data?.contract;
+    if (!contract || !window.confirm("Wypowiedzenie zakończy plan z końcem następnego miesiąca. Kontynuować?")) return;
+    await plan.mutateAsync({ assignmentId: assignment.id, write: () => submitContractNotice("learner", contract.id) });
+  }
+  return <article className="assignment-card">
+    <div className="assignment-heading"><div><p className="eyebrow">Nauczyciel</p><h3>{assignmentDisplayName(assignment, "learner")}</h3></div><span className="duration-badge">{policy.lesson_duration_minutes} min</span></div>
+    <ApiFeedback error={summary.error || history.error || booking.error || plan.error} />
+    <CommercialSummaryPanel details={summary.data} onNotice={() => void notice()} />
+    <BookingPanel regular={summary.data?.active_plan === "regular_contract"} slots={slots} busy={busy} policy={policy} onBook={(slot) => void book(slot)} />
+    <LearnerHistory items={history.data?.items ?? []} />
+    <TokenDetails details={summary.data} />
+  </article>;
+}
+
+function CommercialSummaryPanel({ details, onNotice }: { details?: CommercialSummary; onNotice: () => void }) {
+  if (!details) return <p className="loading-state">Ładowanie planu…</p>;
+  return <div className="commercial-summary"><strong>{details.active_plan ? planCopy[details.active_plan] : "Brak aktywnego planu"}</strong>{details.package ? <p>Pakiet ważny do {details.package.valid_through}. Dostępne tokeny: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}{details.contract ? <p>Umowa: {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {(details.contract.price_minor / 100).toFixed(2)} {details.contract.currency} za lekcję. Zmiany w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}<p>Oczekujące płatności: {details.payments.pending}. Nieopłacone: {details.payments.intentionally_unpaid}. Kredyt: {(details.payments.credit_minor / 100).toFixed(2)} {details.payments.currency}.</p>{details.contract ? <button className="text-button danger-button" onClick={onNotice}>Złóż wypowiedzenie</button> : null}</div>;
+}
+
+function BookingPanel({ regular, slots, busy, policy, onBook }: { regular: boolean; slots: Slot[]; busy: string | null; policy: Policy; onBook: (slot: Slot) => void }) {
+  if (regular) return <p className="supporting-copy">Stałe terminy wynikają z umowy. Elastyczna rezerwacja jest wyłączona.</p>;
+  return <><p className="supporting-copy">Rezerwacja wymaga {policy.learner_booking_minimum_hours} godz. wyprzedzenia, mieści się w horyzoncie {policy.booking_horizon_days} dni i zaczyna na siatce co {policy.start_grid_minutes} minut.</p><SlotPicker slots={slots} busy={busy} onBook={onBook} /></>;
+}
+
+function LearnerHistory({ items }: { items: HistoryEvent[] }) {
+  return <details><summary>Historia</summary>{items.length ? <ul className="history-list">{items.map((event) => <li key={event.id}><strong>{polishEvent(event.event_type)}</strong> · {formatScheduleInstant(event.event_at)}{event.corrects_event ? " · korekta" : ""}</li>)}</ul> : <p className="supporting-copy">Brak zdarzeń.</p>}</details>;
+}
+
+function TokenDetails({ details }: { details?: CommercialSummary }) {
+  if (!details?.package) return null;
+  return <details><summary>Stany tokenów</summary><p className="supporting-copy">{Object.entries(details.package.token_balance).map(([state, count]) => `${polishTokenState(state)}: ${count}`).join(" · ")}</p></details>;
+}
+
+function SlotPicker({ slots, busy, onBook }: { slots: Slot[]; busy: string | null; onBook: (slot: Slot) => void }) {
+  const groups = groupSlotsByLocalDate(slots);
+  if (slots.length === 0) return <EmptyState>Brak wolnych terminów w horyzoncie.</EmptyState>;
+  return <div className="slot-groups">{Array.from(groups.entries()).map(([date, items]) => <div className="slot-group" key={date}><h4>{formatScheduleDate(items[0].start_at)}</h4><div className="slot-grid">{items.map((slot) => <button className="slot-button" key={slot.start_at} disabled={busy === slot.start_at} onClick={() => onBook(slot)}>{busy === slot.start_at ? "Zapisywanie…" : formatScheduleInstant(slot.start_at)}<span>{slot.duration_minutes} min · plan dobierze system</span></button>)}</div></div>)}</div>;
 }
 
 function activeOf(calendar: CalendarResponse | undefined): Assignment[] {
-  if (!calendar) return [];
-  return calendar.assignments.filter((assignment) => assignment.active);
+  return calendar?.assignments.filter((assignment) => assignment.active) ?? [];
 }
 
 function SessionUnavailable({ onRetry }: { onRetry: () => void }) {
-  return <main className="center-shell"><section className="status-card" role="alert"><p className="eyebrow">nutka / sesja</p><h1>{authCopy.unavailable}</h1><button className="secondary-button" onClick={onRetry}>{authCopy.retry}</button></section></main>;
+  return <main className="center-shell"><section className="status-card" role="alert"><h1>{authCopy.unavailable}</h1><button className="secondary-button" onClick={onRetry}>{authCopy.retry}</button></section></main>;
 }
-
-function AssignmentGrid({ assignments, slotsFor, busy, onBook }: { assignments: Assignment[]; slotsFor: (assignmentId: string) => Slot[]; busy: string | null; onBook: (assignmentId: string, slot: Slot) => Promise<void> }) {
-  if (assignments.length === 0) return <EmptyState>Nie masz jeszcze aktywnych przypisań.</EmptyState>;
-  return <div className="assignment-grid">{assignments.map((assignment) => <AssignmentSlots key={assignment.id} assignmentId={assignment.id} label={assignmentDisplayName(assignment, "learner")} duration={assignment.default_duration_minutes} slots={slotsFor(assignment.id)} busy={busy} onBook={(slot) => void onBook(assignment.id, slot)} />)}</div>;
-}
-
-function AssignmentSlots({ assignmentId, duration, slots, busy, onBook, label }: { assignmentId: string; duration: number; slots: Slot[]; busy: string | null; onBook: (slot: Slot) => void; label: string }) {
-  const groups = groupSlotsByLocalDate(slots);
-  return <article className="assignment-card"><div className="assignment-heading"><div><p className="eyebrow">Przypisanie</p><h3>{label}</h3></div><span className="duration-badge">{duration} min</span></div><p className="supporting-copy">Wybierz termin z dostępnych godzin.</p>{slots.length === 0 ? <EmptyState>Brak wolnych terminów w horyzoncie.</EmptyState> : <div className="slot-groups">{Array.from(groups.entries()).map(([date, items]) => <div className="slot-group" key={date}><h4>{formatScheduleDate(items[0].start_at)}</h4><div className="slot-grid">{items.map((slot) => <button className="slot-button" key={slot.start_at} disabled={busy === `${assignmentId}:${slot.start_at}`} onClick={() => onBook(slot)}>{busy === `${assignmentId}:${slot.start_at}` ? "Zapisywanie…" : formatScheduleInstant(slot.start_at)}<span>{duration} min</span></button>)}</div></div>)}</div>}</article>;
-}
-
-function Counter({ value, label }: { value: number; label: string }) { return <div className="counter"><strong>{value}</strong><span>{label}</span></div>; }
 
 function PanelFrame({ title, onLogout, children }: { title: string; onLogout: () => void; children: React.ReactNode }) {
-  return <main className="panel-shell"><header className="panel-header"><div><p className="wordmark">nutka</p><p className="eyebrow">nutka / uczeń</p></div><button className="text-button" onClick={onLogout}>{authCopy.logout}</button></header><section className="panel-hero"><h1>{title}</h1><p>Planuj lekcje z przypisanymi nauczycielami.</p></section>{children}</main>;
+  return <main className="panel-shell"><header className="panel-header"><p className="wordmark">nutka</p><button className="text-button" onClick={onLogout}>{authCopy.logout}</button></header><section className="panel-hero"><h1>{title}</h1><p>Planuj lekcje z przypisanymi nauczycielami.</p></section>{children}</main>;
 }

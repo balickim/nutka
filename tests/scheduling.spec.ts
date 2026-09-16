@@ -3,229 +3,324 @@ import type { Page, Route } from "@playwright/test";
 
 const teacher = { id: "teacher-1", email: "teacher@example.test", name: "Ada Teacher", timezone: "Europe/Warsaw" };
 const learner = { id: "learner-1", email: "learner@example.test", name: "Leo Learner" };
-const assignment = {
-  id: "assignment-1",
-  teacher: teacher.id,
-  learner: learner.id,
-  teacher_name: "Ada Lovelace",
-  learner_name: "Leo Learner",
-  active: true,
-  default_duration_minutes: 45,
+const assignment = { id: "assignment-1", teacher: teacher.id, learner: learner.id, teacher_name: "Ada Teacher", learner_name: "Leo Learner", active: true };
+const starts = ["2030-09-16T15:00:00Z", "2030-09-17T15:00:00Z", "2030-09-18T15:00:00Z", "2030-09-19T15:00:00Z", "2030-09-20T15:00:00Z"];
+const apiRequestPattern = /^https?:\/\/[^/]+\/api\//;
+const policy = {
+  version: "2026-09-lesson-plans-v1", currency: "PLN", ad_hoc_price_minor: 8000, package_price_minor: 26000, regular_lesson_price_minor: 5000,
+  lesson_duration_minutes: 45, start_grid_minutes: 15, participant_buffer_minutes: 5, learner_booking_minimum_hours: 24, learner_change_cutoff_hours: 24,
+  booking_horizon_days: 14, package_token_count: 4, package_validity_days: 60, teacher_cancellation_extension_days: 7, contract_monthly_reschedules: 1,
+  contract_free_cancellations: 2, contract_replacement_deadline_days: 30, monthly_payment_due_day: 5, contract_end_month: 6, contract_end_day: 30,
 };
 
-const firstSlot = "2030-01-15T10:00:00Z";
-const secondSlot = "2030-01-16T10:00:00Z";
-const teacherRescheduledStart = "2030-01-15T10:30:00Z";
-const learnerRescheduledStart = "2030-01-17T10:00:00Z";
+type Mutation = { path: string; body: Record<string, unknown>; headers: Record<string, string> };
 
-type Lesson = {
-  id: string;
-  teacher: string;
-  learner: string;
-  assignment: string;
-  start_at: string;
-  end_at: string;
-  duration_minutes: number;
-  status: "scheduled" | "cancelled";
-  cancellation_initiator_role?: "teacher" | "learner";
-};
-type Rule = { id: string; teacher: string; weekday: number; start_time: string; end_time: string; enabled: boolean };
-type Mutation = { method: string; path: string; body: Record<string, unknown>; headers: Record<string, string> };
-type Fixture = { rules: Rule[]; lessons: Lesson[]; counters: { teacher: number; learner: number }; mutations: Mutation[] };
-
-const lesson = (id: string, startAt: string): Lesson => ({
-  id,
-  teacher: teacher.id,
-  learner: learner.id,
-  assignment: assignment.id,
-  start_at: startAt,
-  end_at: new Date(Date.parse(startAt) + 45 * 60_000).toISOString(),
-  duration_minutes: 45,
-  status: "scheduled",
-});
-
-async function json(route: Route, data: unknown, status = 200) {
-  await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(data) });
-}
-
-function calendar(fixture: Fixture) {
+function lesson(id: string, startAt: string, planType: "ad_hoc" | "package" | "regular_contract" = "ad_hoc") {
+  const endAt = new Date(Date.parse(startAt) + 45 * 60_000).toISOString();
   return {
-    assignments: [assignment],
-    availability_rules: fixture.rules,
-    availability_exceptions: [],
-    lessons: fixture.lessons,
-    cancellation_counters: fixture.counters,
+    id,
+    teacher: teacher.id,
+    learner: learner.id,
+    assignment: assignment.id,
+    start_at: startAt,
+    end_at: endAt,
+    duration_minutes: 45,
+    plan_type: planType,
+    package_token: planType === "package" ? `token-${id}` : null,
+    contract: planType === "regular_contract" ? "contract-1" : null,
+    policy_version: "2026-09-lesson-plans-v1",
+    unit_price_minor: planType === "ad_hoc" ? 8000 : planType === "regular_contract" ? 5000 : 0,
+    currency: "PLN",
+    schedule_state: "scheduled" as const,
+    outcome: null,
+    protected_interval: { start_at: new Date(Date.parse(startAt) - 5 * 60_000).toISOString(), end_at: new Date(Date.parse(endAt) + 5 * 60_000).toISOString() },
   };
 }
 
-async function captureMutation(route: Route, fixture: Fixture, path: string) {
-  const bodyText = route.request().postData() || "{}";
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(bodyText) as Record<string, unknown>;
-  } catch {
-    body = {};
-  }
-  fixture.mutations.push({ method: route.request().method(), path, body, headers: route.request().headers() });
-  return body;
+function calendar(nearTerm: ReturnType<typeof lesson>[] = [], later: ReturnType<typeof lesson>[] = []) {
+  return {
+    assignments: [assignment],
+    availability_rules: [],
+    availability_exceptions: [],
+    commercial_summaries: [],
+    near_term_lessons: nearTerm,
+    later_contract_lessons: later,
+    unresolved_work: { awaiting_outcome: 0, pending_settlement: 0, unpaid_charges: 0, overdue_charges: 0 },
+  };
 }
 
-async function installSchedulingMocks(page: Page, role: "teacher" | "learner", fixture: Fixture) {
-  let authenticated = false;
-  await page.route("**/api/**", async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-    const path = url.pathname;
-    if (path === "/api/health") return json(route, {});
-    if (path === "/api/teachers/auth/me") return authenticated ? json(route, { record: teacher }) : json(route, {}, 401);
-    if (path === "/api/learners/auth/me") return authenticated ? json(route, { record: learner }) : json(route, {}, 401);
-    if (path === "/api/collections/teachers/auth-with-password" || path === "/api/collections/learners/auth-with-password") {
-      authenticated = true;
-      return json(route, { record: path.includes("teachers") ? teacher : learner, token: "" });
-    }
-    if (path === "/api/teachers/auth/logout" || path === "/api/learners/auth/logout") {
-      authenticated = false;
-      return json(route, { status: "ok" });
-    }
-    if (path === "/api/teachers/calendar") return json(route, calendar(fixture));
-    if (path === "/api/learners/calendar") return json(route, calendar(fixture));
-    if (path === "/api/teachers/availability/rules" && request.method() === "POST") {
-      const body = await captureMutation(route, fixture, path);
-      const created: Rule = { id: "rule-1", teacher: teacher.id, weekday: Number(body.weekday), start_time: String(body.start_time), end_time: String(body.end_time), enabled: Boolean(body.enabled) };
-      fixture.rules = [created];
-      return json(route, created);
-    }
-    if (path === "/api/learners/assignments/assignment-1/slots") {
-      const occupied = new Set(fixture.lessons.filter((item) => item.status === "scheduled").map((item) => item.start_at));
-      const slots = [firstSlot, secondSlot, "2030-01-18T10:00:00Z"]
-        .filter((startAt) => !occupied.has(startAt))
-        .map((startAt) => ({ start_at: startAt, end_at: new Date(Date.parse(startAt) + 45 * 60_000).toISOString(), duration_minutes: 45 }));
-      return json(route, { teacher: teacher.id, assignment: assignment.id, slots });
-    }
-    if (path === "/api/learners/assignments/assignment-1/book" && request.method() === "POST") {
-      const body = await captureMutation(route, fixture, path);
-      const created = lesson(`lesson-${fixture.lessons.length + 1}`, String(body.start_at));
-      fixture.lessons.push(created);
-      return json(route, created);
-    }
-    const reschedule = path.match(/^\/api\/(teachers|learners)\/lessons\/(lesson-[12])\/reschedule$/);
-    if (reschedule && request.method() === "PATCH") {
-      const body = await captureMutation(route, fixture, path);
-      const current = fixture.lessons.find((item) => item.id === reschedule[2]);
-      if (!current) return json(route, { code: "not_found", message: "Lekcja nie istnieje." }, 404);
-      const duration = reschedule[1] === "teachers" && body.duration_minutes ? Number(body.duration_minutes) : current.duration_minutes;
-      if (body.start_at) current.start_at = String(body.start_at);
-      current.duration_minutes = duration;
-      current.end_at = new Date(Date.parse(current.start_at) + duration * 60_000).toISOString();
-      return json(route, current);
-    }
-    const cancellation = path.match(/^\/api\/(teachers|learners)\/lessons\/(lesson-[12])\/cancel$/);
-    if (cancellation && request.method() === "POST") {
-      await captureMutation(route, fixture, path);
-      const current = fixture.lessons.find((item) => item.id === cancellation[2]);
-      if (!current) return json(route, { code: "not_found", message: "Lekcja nie istnieje." }, 404);
-      current.status = "cancelled";
-      current.cancellation_initiator_role = cancellation[1] === "teachers" ? "teacher" : "learner";
-      fixture.counters[current.cancellation_initiator_role] += 1;
-      return json(route, current);
-    }
-    if (role === "teacher" && path.startsWith("/api/teachers/")) return json(route, {});
-    if (role === "learner" && path.startsWith("/api/learners/")) return json(route, {});
-    return route.continue();
-  });
+const emptyHistory = { items: [], page: 1, per_page: 20, total: 0 };
+const emptyFinancialWork = { charges: [], entries: [], credits: [] };
+const emptyUnresolved = { awaiting_outcome: [], pending_settlements: [], unpaid_charges: [], overdue_charges: [] };
+
+async function json(route: Route, value: unknown, status = 200) {
+  await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
 }
 
-async function localizedInstant(page: Page, instant: string) {
-  return page.evaluate((value) => new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)), instant);
+async function bodyOf(route: Route): Promise<Record<string, unknown>> {
+  return JSON.parse(route.request().postData() || "{}") as Record<string, unknown>;
 }
 
-async function browserDateTimeInput(page: Page, instant: string) {
-  return page.evaluate((value) => {
-    const date = new Date(value);
-    const pad = (part: number) => String(part).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  }, instant);
+async function installSession(page: Page, role: "teacher" | "learner") {
+  await page.route("**/api/health", (route) => json(route, {}));
+  await page.route(`**/api/${role === "teacher" ? "teachers" : "learners"}/auth/me`, (route) => json(route, { record: role === "teacher" ? teacher : learner }));
 }
 
-test("teacher and learner complete an isolated scheduling lifecycle", async ({ browser }) => {
-  const fixture: Fixture = { rules: [], lessons: [], counters: { teacher: 0, learner: 0 }, mutations: [] };
+function packageValue(reserved: number) {
+  return {
+    id: "package-1",
+    assignment: assignment.id,
+    status: "open",
+    purchased_on: "2030-09-01",
+    valid_through: "2030-10-30",
+    price_minor: 26000,
+    currency: "PLN",
+    policy_version: "2026-09-lesson-plans-v1",
+    tokens: [0, 1, 2, 3].map((index) => ({ id: `token-${index + 1}`, ordinal: index + 1, state: index < reserved ? "reserved" : "available", lesson: index < reserved ? `lesson-${index + 1}` : null })),
+  };
+}
+
+function packageSummary(reserved: number) {
+  return {
+    assignment: assignment.id,
+    active_plan: reserved < 4 ? "package" : "package",
+    package: { id: "package-1", valid_through: "2030-10-30", token_balance: { available: 4 - reserved, reserved, used: 0, expired: 0, invalidated: 0 } },
+    contract: null,
+    payments: { pending: 0, intentionally_unpaid: 0, overdue: 0, credit_minor: 0, currency: "PLN" },
+  };
+}
+
+test("teacher purchase, four package bookings, precedence, and ad hoc settlement stay explicit", async ({ browser }) => {
   const context = await browser.newContext();
   const teacherPage = await context.newPage();
   const learnerPage = await context.newPage();
-  await installSchedulingMocks(teacherPage, "teacher", fixture);
-  await installSchedulingMocks(learnerPage, "learner", fixture);
-
-  await teacherPage.goto("/teachers/login");
-  await teacherPage.getByLabel("Adres e-mail").fill(teacher.email);
-  await teacherPage.getByLabel("Hasło").fill("teacher-password");
-  await teacherPage.getByRole("button", { name: "Zaloguj się" }).click();
-  await expect(teacherPage).toHaveURL(/\/teachers$/);
-  await expect(teacherPage).toHaveTitle("nutka — przestrzeń nauczyciela");
-
-  await teacherPage.goto("/teachers/availability");
-  await teacherPage.getByRole("button", { name: "Dodaj regułę" }).click();
-  await expect(teacherPage.locator("article.rule-row strong").filter({ hasText: "Poniedziałek" })).toBeVisible();
-  await expect(teacherPage.getByText("16:00–20:00", { exact: true })).toBeVisible();
-  await expect(teacherPage.getByText("Reguły: Europe/Warsaw", { exact: true })).toBeVisible();
-
-  await learnerPage.goto("/learners/login");
-  await learnerPage.getByLabel("Adres e-mail").fill(learner.email);
-  await learnerPage.getByLabel("Hasło").fill("learner-password");
-  await learnerPage.getByRole("button", { name: "Zaloguj się" }).click();
-  await expect(learnerPage).toHaveURL(/\/learners\/calendar$/);
-  await expect(learnerPage).toHaveTitle("nutka — przestrzeń ucznia");
-  await expect(learnerPage.getByRole("heading", { name: "Ada Lovelace", exact: true })).toBeVisible();
-  const firstSlotText = await localizedInstant(learnerPage, firstSlot);
-  await expect(learnerPage.locator("button.slot-button").first()).toContainText(firstSlotText);
-
-  await learnerPage.locator("button.slot-button").first().click();
-  await expect(learnerPage.locator("article.lesson-card")).toHaveCount(1);
-  await learnerPage.locator("button.slot-button").first().click();
-  await expect(learnerPage.locator("article.lesson-card")).toHaveCount(2);
+  const mutations: Mutation[] = [];
+  let purchased = false;
+  let reserved = 0;
+  const lessons: ReturnType<typeof lesson>[] = [];
+  await installSession(teacherPage, "teacher");
+  await teacherPage.route(apiRequestPattern, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/health") return json(route, {});
+    if (path === "/api/teachers/auth/me") return json(route, { record: teacher });
+    if (path === "/api/teachers/business-policy") return json(route, policy);
+    if (path === "/api/teachers/calendar") return json(route, calendar(lessons));
+    if (path === "/api/teachers/unresolved-work") return json(route, { ...emptyUnresolved, pending_settlements: [{ lesson: "settlement-1", assignment: assignment.id, amount_minor: 8000, currency: "PLN" }] });
+    if (path === "/api/teachers/financial-work") return json(route, emptyFinancialWork);
+    if (path.endsWith("/commercial-summary")) return json(route, purchased ? packageSummary(reserved) : { ...packageSummary(4), active_plan: "ad_hoc", package: null });
+    if (path.endsWith("/packages") && route.request().method() === "GET") return json(route, { packages: purchased ? [packageValue(reserved)] : [] });
+    if (path.endsWith("/contracts")) return json(route, { contracts: [] });
+    if (path.endsWith("/history")) return json(route, emptyHistory);
+    if (path === "/api/teachers/assignments/assignment-1/packages") {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      purchased = true;
+      return json(route, packageValue(reserved), 201);
+    }
+    if (path === "/api/teachers/lessons/settlement-1/settlement") {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      return json(route, { lesson: "settlement-1", assignment: assignment.id, amount_minor: 8000, currency: "PLN", settlement_state: body.settlement });
+    }
+    return json(route, { code: "not_found", message: "Not found." }, 404);
+  });
 
   await teacherPage.goto("/teachers");
-  await expect(teacherPage.locator("article.lesson-card")).toHaveCount(2);
-  const firstTeacherLesson = teacherPage.locator("article.lesson-card").first();
-  await firstTeacherLesson.getByRole("button", { name: "Przełóż" }).click();
-  await teacherPage.locator("#start-lesson-1").fill(await browserDateTimeInput(teacherPage, teacherRescheduledStart));
-  await teacherPage.locator("#duration-lesson-1").fill("60");
-  await firstTeacherLesson.getByRole("button", { name: "Zapisz termin" }).click();
-  await expect(teacherPage.locator("article.lesson-card").first()).toContainText("60 min");
-  await expect(teacherPage.locator("article.lesson-card").first()).toContainText(await localizedInstant(teacherPage, teacherRescheduledStart));
+  await teacherPage.getByRole("button", { name: "Oznacz zakup pakietu" }).click();
+  await expect(teacherPage.getByText("Dostępny", { exact: false }).first()).toBeVisible();
+  await teacherPage.getByRole("button", { name: "Zapisz rozliczenie" }).click();
 
-  await teacherPage.locator("article.lesson-card").first().getByRole("button", { name: "Odwołaj" }).click();
-  await expect(teacherPage.locator("article.lesson-card").first()).toContainText("Odwołana");
-  await expect(teacherPage.locator("article.lesson-card").first()).toContainText("Odwołana przez Ciebie");
-  await expect(teacherPage.locator(".counter strong").first()).toHaveText("1");
+  await installSession(learnerPage, "learner");
+  await learnerPage.route(apiRequestPattern, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/health") return json(route, {});
+    if (path === "/api/learners/auth/me") return json(route, { record: learner });
+    if (path === "/api/learners/business-policy") return json(route, policy);
+    if (path === "/api/learners/calendar") return json(route, calendar(lessons));
+    if (path.endsWith("/commercial-summary")) return json(route, packageSummary(reserved));
+    if (path.endsWith("/history")) return json(route, emptyHistory);
+    if (path.endsWith("/slots")) {
+      const occupied = new Set(lessons.map((item) => item.start_at));
+      const slots = starts.filter((start) => !occupied.has(start)).map((start) => ({ start_at: start, end_at: new Date(Date.parse(start) + 45 * 60_000).toISOString(), duration_minutes: 45, protected_interval: { start_at: start, end_at: new Date(Date.parse(start) + 50 * 60_000).toISOString() } }));
+      return json(route, { teacher: teacher.id, assignment: assignment.id, policy_version: "2026-09-lesson-plans-v1", slots });
+    }
+    if (path.endsWith("/book")) {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      const plan = reserved < 4 ? "package" : "ad_hoc";
+      const created = lesson(`lesson-${lessons.length + 1}`, String(body.start_at), plan);
+      lessons.push(created);
+      if (plan === "package") reserved++;
+      return json(route, created, 201);
+    }
+    return json(route, { code: "not_found", message: "Not found." }, 404);
+  });
 
-  await learnerPage.reload();
-  await expect(learnerPage.locator("article.lesson-card")).toHaveCount(2);
-  await expect(learnerPage.locator("article.lesson-card").first()).toContainText("Odwołana przez drugą osobę");
-  const scheduledLearnerLesson = learnerPage.locator("article.lesson-card").filter({ hasText: "Zaplanowana" }).first();
-  await scheduledLearnerLesson.getByRole("button", { name: "Przełóż" }).click();
-  await expect(learnerPage.locator("#duration-lesson-2")).toHaveCount(0);
-  await learnerPage.locator("#start-lesson-2").fill(await browserDateTimeInput(learnerPage, learnerRescheduledStart));
-  await scheduledLearnerLesson.getByRole("button", { name: "Zapisz termin" }).click();
-  await expect(learnerPage.locator("article.lesson-card").filter({ hasText: "Zaplanowana" }).first()).toContainText(await localizedInstant(learnerPage, learnerRescheduledStart));
-  await learnerPage.locator("article.lesson-card").filter({ hasText: "Zaplanowana" }).first().getByRole("button", { name: "Odwołaj" }).click();
-  await expect(learnerPage.locator("article.lesson-card").nth(1)).toContainText("Odwołana przez Ciebie");
-  await expect(learnerPage.locator(".counter strong").first()).toHaveText("1");
-
-  const schedulingMutations = fixture.mutations;
-  expect(schedulingMutations.length).toBe(7);
-  for (const mutation of schedulingMutations) {
-    expect(mutation.headers["x-requested-with"]).toBe("fetch");
-    for (const identityField of ["id", "teacher", "learner", "assignment"]) expect(mutation.body).not.toHaveProperty(identityField);
+  await learnerPage.goto("/learners/calendar");
+  for (let expected = 1; expected <= 5; expected++) {
+    await learnerPage.locator("button.slot-button").first().click();
+    await expect(learnerPage.locator("article.lesson-card")).toHaveCount(expected);
   }
-  const learnerBooking = schedulingMutations.find((mutation) => mutation.path.endsWith("/book"));
-  const learnerReschedule = schedulingMutations.find((mutation) => mutation.path.includes("/learners/lessons/") && mutation.path.endsWith("/reschedule"));
-  expect(learnerBooking?.body).toEqual({ start_at: firstSlot });
-  expect(Object.keys(learnerReschedule?.body ?? {})).toEqual(["start_at"]);
-  expect(Date.parse(String(learnerReschedule?.body.start_at))).toBe(Date.parse(learnerRescheduledStart));
-
-  await teacherPage.getByRole("button", { name: "Wyloguj się" }).click();
-  await expect(teacherPage).toHaveURL(/\/teachers\/login$/);
-  await expect(learnerPage).toHaveURL(/\/learners\/calendar$/);
-  await expect(learnerPage.getByRole("heading", { name: /Cześć, Leo Learner/ })).toBeVisible();
+  await expect(learnerPage.locator("article.lesson-card").filter({ hasText: "Pakiet lekcji" })).toHaveCount(4);
+  await expect(learnerPage.locator("article.lesson-card").filter({ hasText: "Pojedyncza lekcja" })).toHaveCount(1);
+  const bookingMutations = mutations.filter((item) => item.path.endsWith("/book"));
+  expect(bookingMutations).toHaveLength(5);
+  expect(bookingMutations.slice(0, 4).every((item) => !Object.hasOwn(item.body, "plan_type"))).toBe(true);
+  expect(mutations.find((item) => item.path.endsWith("/settlement"))?.body).toEqual({ settlement: "paid" });
+  expect(mutations.every((item) => item.headers["x-requested-with"] === "fetch")).toBe(true);
   await context.close();
+});
+
+const contract = {
+  id: "contract-1",
+  assignment: assignment.id,
+  status: "active",
+  start_on: "2030-09-16",
+  end_on: "2031-06-30",
+  weekday: 1,
+  start_time: "17:00",
+  price_minor: 5000,
+  currency: "PLN",
+  policy_version: "2026-09-lesson-plans-v1",
+  remaining_monthly_reschedules: 1,
+  remaining_free_cancellations: 2,
+};
+
+function contractSummary(endOn = contract.end_on) {
+  return {
+    assignment: assignment.id,
+    active_plan: "regular_contract",
+    package: null,
+    contract: { id: contract.id, status: contract.status, start_on: contract.start_on, end_on: endOn, remaining_monthly_reschedules: 1, remaining_free_cancellations: 2, price_minor: 5000, currency: "PLN" },
+    payments: { pending: 1, intentionally_unpaid: 0, overdue: 0, credit_minor: 0, currency: "PLN" },
+  };
+}
+
+test("regular contract exposes series, learner horizon controls, forecast, notice, and payment", async ({ browser }) => {
+  const context = await browser.newContext();
+  const teacherPage = await context.newPage();
+  const learnerPage = await context.newPage();
+  const mutations: Mutation[] = [];
+  let active = false;
+  let effectiveEnd = contract.end_on;
+  let occurrence = lesson("contract-lesson-1", starts[0], "regular_contract");
+  const later = lesson("contract-lesson-later", "2031-03-03T16:00:00Z", "regular_contract");
+  const charge = { id: "charge-1", assignment: assignment.id, source_type: "regular_contract", source_id: contract.id, period: "2030-09", original_amount_minor: 15000, current_amount_minor: 15000, currency: "PLN", settlement_state: "pending", derived_state: "pending", overdue: false, due_on: "2030-09-05" };
+  await installSession(teacherPage, "teacher");
+  await teacherPage.route(apiRequestPattern, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/health") return json(route, {});
+    if (path === "/api/teachers/auth/me") return json(route, { record: teacher });
+    if (path === "/api/teachers/business-policy") return json(route, policy);
+    if (path === "/api/teachers/calendar") return json(route, calendar(active ? [occurrence] : [], active ? [later] : []));
+    if (path === "/api/teachers/unresolved-work") return json(route, { ...emptyUnresolved, unpaid_charges: active ? [charge] : [] });
+    if (path === "/api/teachers/financial-work") return json(route, { ...emptyFinancialWork, charges: active ? [charge] : [] });
+    if (path.endsWith("/commercial-summary")) return json(route, active ? contractSummary(effectiveEnd) : { ...contractSummary(), active_plan: "ad_hoc", contract: null });
+    if (path.endsWith("/packages")) return json(route, { packages: [] });
+    if (path === "/api/teachers/assignments/assignment-1/contracts" && route.request().method() === "GET") return json(route, { contracts: active ? [{ ...contract, effective_end_on: effectiveEnd }] : [] });
+    if (path.endsWith("/history")) return json(route, emptyHistory);
+    if (path === "/api/teachers/assignments/assignment-1/contracts" && route.request().method() === "POST") {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      active = true;
+      return json(route, contract, 201);
+    }
+    if (path === "/api/teachers/contracts/contract-1/series") return json(route, { contract, near_term: [occurrence], later: [later] });
+    if (path === "/api/teachers/contracts/contract-1/months") return json(route, { months: [{ id: "month-1", contract: contract.id, assignment: assignment.id, month: "2030-09", billable_count: 3, forecast_amount_minor: 15000, currency: "PLN", forecast: true }] });
+    if (path === "/api/teachers/charges/charge-1/payment") {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      return json(route, { ...charge, settlement_state: body.settlement, derived_state: body.settlement });
+    }
+    return json(route, { code: "not_found", message: "Not found." }, 404);
+  });
+
+  await teacherPage.goto("/teachers");
+  await teacherPage.getByLabel("Data początku").fill("2030-09-16");
+  await teacherPage.getByRole("button", { name: "Aktywuj umowę" }).click();
+  await expect(teacherPage.getByText("Seria: najbliższe 1, dalsze 1")).toBeVisible();
+  await teacherPage.getByText("Prognozy i należności miesięczne").click();
+  await expect(teacherPage.getByText(/2030-09.*150\.00 PLN.*prognoza/)).toBeVisible();
+  await teacherPage.getByRole("button", { name: "Zapisz płatność" }).click();
+
+  await installSession(learnerPage, "learner");
+  learnerPage.on("dialog", (dialog) => dialog.accept());
+  await learnerPage.route(apiRequestPattern, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/health") return json(route, {});
+    if (path === "/api/learners/auth/me") return json(route, { record: learner });
+    if (path === "/api/learners/business-policy") return json(route, policy);
+    if (path === "/api/learners/calendar") return json(route, { ...calendar([occurrence]), payment_summary: [contractSummary(effectiveEnd).payments], history_summary: [{ assignment: assignment.id, event_count: 2 }] });
+    if (path.endsWith("/commercial-summary")) return json(route, contractSummary(effectiveEnd));
+    if (path.endsWith("/history")) return json(route, { items: [{ id: "event-1", assignment: assignment.id, aggregate_type: "contract", aggregate_id: contract.id, event_type: "contract_activated", actor_role: "teacher", event_at: "2030-09-01T10:00:00Z" }], page: 1, per_page: 20, total: 1 });
+    if (path.endsWith("/slots")) return json(route, { teacher: teacher.id, assignment: assignment.id, policy_version: contract.policy_version, slots: [] });
+    if (path.endsWith("/reschedule")) {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      occurrence = lesson(occurrence.id, String(body.start_at), "regular_contract");
+      return json(route, occurrence);
+    }
+    if (path.endsWith("/cancel")) {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      occurrence = { ...occurrence, schedule_state: "cancelled" };
+      return json(route, occurrence);
+    }
+    if (path === "/api/learners/contracts/contract-1/notice") {
+      const body = await bodyOf(route);
+      mutations.push({ path, body, headers: route.request().headers() });
+      effectiveEnd = "2030-10-31";
+      return json(route, { ...contract, status: "notice_given", effective_end_on: effectiveEnd });
+    }
+    return json(route, { code: "not_found", message: "Not found." }, 404);
+  });
+
+  await learnerPage.goto("/learners/calendar");
+  await expect(learnerPage.getByText("Stałe terminy wynikają z umowy")).toBeVisible();
+  await expect(learnerPage.locator("button.slot-button")).toHaveCount(0);
+  await learnerPage.getByRole("button", { name: "Przełóż" }).click();
+  await learnerPage.getByLabel("Nowy termin").fill("2030-09-23T17:00");
+  await learnerPage.getByRole("button", { name: "Zapisz termin" }).click();
+  await learnerPage.getByRole("button", { name: "Odwołaj" }).click();
+  await learnerPage.getByRole("button", { name: "Złóż wypowiedzenie" }).click();
+  await expect(learnerPage.getByText(/Umowa: 2030-09-16–2030-10-31/)).toBeVisible();
+  expect(mutations.find((item) => item.path.endsWith("/reschedule"))?.body).toEqual({ start_at: "2030-09-23T15:00:00.000Z" });
+  expect(mutations.find((item) => item.path.endsWith("/notice"))?.body).toEqual({});
+  expect(mutations.find((item) => item.path.endsWith("/payment"))?.body).toEqual({ settlement: "paid" });
+  await context.close();
+});
+
+test("availability requires explicit near-term resolution and reviews distant omission before atomic commit", async ({ page }) => {
+  const near = lesson("near-lesson", starts[0], "ad_hoc");
+  const later = lesson("later-contract", "2031-03-03T16:00:00Z", "regular_contract");
+  let committed = false;
+  let commitBody: Record<string, unknown> | undefined;
+  await installSession(page, "teacher");
+  await page.route(apiRequestPattern, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/health") return json(route, {});
+    if (path === "/api/teachers/auth/me") return json(route, { record: teacher });
+    if (path === "/api/teachers/business-policy") return json(route, { ...policy, booking_horizon_days: 12 });
+    if (path === "/api/teachers/calendar") return json(route, calendar(committed ? [{ ...near, schedule_state: "cancelled" }] : [near], [later]));
+    if (path === "/api/teachers/availability/preview") return json(route, { proposal: await bodyOf(route), near_term_conflicts: [{ lesson: near.id, plan: "ad_hoc", start_at: near.start_at, allowed_resolutions: ["cancel", "reschedule"] }], distant_effects: [{ occurrence: later.id, effect: "omit", start_at: later.start_at }], preview_version: "opaque-v1" });
+    if (path === "/api/teachers/availability/commit") {
+      commitBody = await bodyOf(route);
+      committed = true;
+      return json(route, { preview: { proposal: commitBody.proposal, near_term_conflicts: [], distant_effects: [], preview_version: "opaque-v1" }, availability_rule: { id: "rule-1", teacher: teacher.id, weekday: 1, start_time: "16:00", end_time: "20:00", enabled: true } });
+    }
+    return json(route, { code: "not_found", message: "Not found." }, 404);
+  });
+
+  await page.goto("/teachers/availability");
+  await expect(page.getByRole("heading", { name: "Lekcje w 12 dniach" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dalsze stałe rezerwacje" })).toBeVisible();
+  await page.getByRole("button", { name: "Sprawdź regułę" }).click();
+  const save = page.getByRole("button", { name: "Zapisz wszystko atomowo" });
+  await expect(save).toBeDisabled();
+  await expect(page.getByText(/Pomiń 2031-03-03/)).toBeVisible();
+  await page.getByLabel("Rozwiązanie near-lesson").selectOption("cancel");
+  await expect(save).toBeEnabled();
+  await save.click();
+  expect(commitBody).toMatchObject({ preview_version: "opaque-v1", resolutions: [{ lesson: "near-lesson", action: "cancel" }] });
+  await expect(page.locator("article.lesson-card").filter({ hasText: "Odwołana" })).toHaveCount(1);
 });

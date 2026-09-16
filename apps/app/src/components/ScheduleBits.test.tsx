@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import { canManageLesson, hasUpcomingLessons, lessonParticipantName } from "./ScheduleBits";
 import type { Lesson } from "../api/scheduling";
 
-const lesson = (startAt: string, status: Lesson["status"] = "scheduled"): Lesson => ({
+const lesson = (startAt: string, scheduleState: Lesson["schedule_state"] = "scheduled"): Lesson => ({
   id: "lesson-1", teacher: "teacher-1", learner: "learner-1", assignment: "assignment-1",
-  start_at: startAt, end_at: "2026-01-15T13:00:00Z", duration_minutes: 45, status,
+  start_at: startAt, end_at: "2026-01-15T13:00:00Z", duration_minutes: 45,
+  plan_type: "ad_hoc", package_token: null, contract: null, policy_version: "v1",
+  unit_price_minor: 8000, currency: "PLN", schedule_state: scheduleState, outcome: null,
+  protected_interval: { start_at: startAt, end_at: "2026-01-15T13:05:00Z" },
 });
 
 describe("lesson lifecycle controls", () => {

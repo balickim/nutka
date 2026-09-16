@@ -141,6 +141,9 @@ func validLocalMinuteShape(value string) bool {
 func domainExceptions(rows []*core.Record) ([]scheduling.AvailabilityException, error) {
 	items := make([]scheduling.AvailabilityException, 0, len(rows))
 	for _, row := range rows {
+		if !row.GetBool(schedulingstore.EnabledField) {
+			continue
+		}
 		start, end := row.GetDateTime(schedulingstore.StartAtField).Time().UTC(), row.GetDateTime(schedulingstore.EndAtField).Time().UTC()
 		interval, err := scheduling.NewInterval(start, end)
 		if err != nil {
