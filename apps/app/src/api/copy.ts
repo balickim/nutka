@@ -205,7 +205,7 @@ export function availabilityHelpCopy(policy: Policy) {
 }
 
 // Explains the learner panel sections in everyday words. Texts restate docs/constitutions/scheduling.md and docs/api/materials.md.
-export const learnerMaterialsHelp = "Materiały dodaje Twój nauczyciel: tekst, zdjęcia i pliki PDF. Najnowsze są na górze. Widzisz tylko materiały od nauczyciela z tej karty.";
+export const learnerMaterialsHelp = "Materiały dodaje Twój nauczyciel: tekst, zdjęcia i pliki PDF. Najnowsze są na górze. Widzisz tylko materiały od wybranego nauczyciela.";
 
 export function learnerHelpCopy(policy: Policy) {
   const cutoff = policy.learner_booking_minimum_hours;

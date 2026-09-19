@@ -35,7 +35,7 @@ async function mockLearnerPolicy(page: Page) {
 
 test("unauthenticated learners are sent to login", async ({ page }) => {
   await mockUnauthenticated(page);
-  await page.goto("/learners/calendar");
+  await page.goto("/learners/lessons");
   await expect(page).toHaveURL(/\/learners\/login/);
   await expect(page.getByRole("heading", { name: "Zaloguj się", exact: true })).toBeVisible();
 });
@@ -72,8 +72,9 @@ test("successful login reaches the learner home and logout returns to login", as
   await page.getByLabel("Adres e-mail").fill(learner.email);
   await page.getByLabel("Hasło").fill("local-password");
   await page.getByRole("button", { name: "Zaloguj się" }).click();
-  await expect(page).toHaveURL(/\/learners\/calendar$/);
+  await expect(page).toHaveURL(/\/learners$/);
   await expect(page.getByRole("heading", { name: /Cześć, Test Learner/ })).toBeVisible();
+  await expect(page.getByText("Nie masz jeszcze aktywnych zajęć.", { exact: false })).toBeVisible();
   expect(await page.evaluate(() => ({ localStorage: localStorage.length, cookie: document.cookie }))).toEqual({ localStorage: 0, cookie: "" });
 
   await page.getByRole("button", { name: "Wyloguj się" }).click();
@@ -90,7 +91,7 @@ test("an expired server session returns to login", async ({ page }) => {
   await mockEmptyLearnerCalendar(page);
   await mockLearnerPolicy(page);
   await page.route("**/api/health", (route) => route.fulfill({ status: 200, body: "{}" }));
-  await page.goto("/learners/calendar");
+  await page.goto("/learners");
   await expect(page.getByRole("heading", { name: /Cześć, Test Learner/ })).toBeVisible();
   await expect(page).toHaveURL(/\/learners\/login/, { timeout: 5000 });
 });
@@ -115,10 +116,20 @@ test("logout synchronizes across learner tabs without sharing session data", asy
   await first.getByLabel("Adres e-mail").fill(learner.email);
   await first.getByLabel("Hasło").fill("local-password");
   await first.getByRole("button", { name: "Zaloguj się" }).click();
-  await expect(first).toHaveURL(/\/learners\/calendar$/);
-  await second.goto("/learners/calendar");
+  await expect(first).toHaveURL(/\/learners$/);
+  await second.goto("/learners");
   await expect(second.getByRole("heading", { name: /Cześć, Test Learner/ })).toBeVisible();
   await first.getByRole("button", { name: "Wyloguj się" }).click();
   await expect(second).toHaveURL(/\/learners\/login/, { timeout: 5000 });
   await context.close();
+});
+
+test("the former learner calendar route opens the lessons screen", async ({ page }) => {
+  await page.route("**/api/learners/auth/me", (route) => route.fulfill({ status: 200, body: JSON.stringify({ record: learner }) }));
+  await mockEmptyLearnerCalendar(page);
+  await mockLearnerPolicy(page);
+  await page.route("**/api/health", (route) => route.fulfill({ status: 200, body: "{}" }));
+  await page.goto("/learners/calendar");
+  await expect(page).toHaveURL(/\/learners\/lessons$/);
+  await expect(page.getByRole("link", { name: "Lekcje" })).toHaveClass(/active/);
 });

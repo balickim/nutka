@@ -9,7 +9,7 @@ import { ActionButton } from "../../../components/action-button";
 import { AdvancedOperations } from "../../../components/advanced-operations";
 import { ApiFeedback } from "../../../components/api-feedback";
 import { useToast } from "../../../components/toast";
-import { formatMoney, parseMajor } from "../../../money";
+import { currencySymbol, formatMoney, parseMajor } from "../../../money";
 import { useCorrectionMutation, useSettlementMutation } from "../../../query/commercial";
 import { formatScheduleDate } from "../../../time/schedule";
 
@@ -66,7 +66,7 @@ function ChargeCorrections({ charge }: { charge: Charge }) {
   return <AdvancedOperations label="Zwrot lub korekta należności">
     {(reason) => <>
       <ApiFeedback error={mutation.error} />
-      <label htmlFor={`refund-${charge.id}`}>Kwota zwrotu w {charge.currency}</label>
+      <label htmlFor={`refund-${charge.id}`}>Kwota zwrotu w {currencySymbol(charge.currency)}</label>
       <input id={`refund-${charge.id}`} inputMode="decimal" value={refund} onChange={(event) => setRefund(event.target.value)} aria-invalid={amount === null} />
       {amount === null ? <p className="field-error">Podaj kwotę, na przykład 25,00.</p> : null}
       <div className="row-actions">

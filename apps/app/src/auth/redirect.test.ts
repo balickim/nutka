@@ -17,6 +17,7 @@ describe("getSafeRedirect", () => {
   it("keeps post-login redirects inside the matching persona route tree", () => {
     expect(getPersonaRedirect("/teachers/availability", "teacher")).toBe("/teachers/availability");
     expect(getPersonaRedirect("/learners/calendar", "teacher")).toBe("/teachers");
-    expect(getPersonaRedirect("/teachers", "learner")).toBe("/learners/calendar");
+    expect(getPersonaRedirect("/teachers", "learner")).toBe("/learners");
+    expect(getPersonaRedirect("/learnersx", "learner")).toBe("/learners");
   });
 });

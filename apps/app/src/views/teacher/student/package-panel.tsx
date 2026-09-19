@@ -11,7 +11,7 @@ import { ApiFeedback } from "../../../components/api-feedback";
 import { FlowPanel } from "../../../components/flow-panel";
 import { PolicyHint } from "../../../components/policy-hint";
 import { useToast } from "../../../components/toast";
-import { formatMoney, parseMajor } from "../../../money";
+import { currencySymbol, formatMoney, parseMajor } from "../../../money";
 import { usePlanMutation, useCorrectionMutation } from "../../../query/commercial";
 import { EventPicker } from "./event-picker";
 import { LessonPicker } from "./lesson-picker";
@@ -65,7 +65,7 @@ function PackageCorrections({ accountId, assignmentId, value }: { accountId: str
   return <AdvancedOperations>
     {(reason) => <>
       <ApiFeedback error={plan.error || correction.error} />
-      <label htmlFor={`refund-${value.id}`}>Kwota zwrotu w {value.currency}, opcjonalna</label>
+      <label htmlFor={`refund-${value.id}`}>Kwota zwrotu w {currencySymbol(value.currency)}, opcjonalna</label>
       <input id={`refund-${value.id}`} inputMode="decimal" value={refund} onChange={(event) => setRefund(event.target.value)} aria-invalid={amount === null} />
       <ActionButton danger busy={plan.isPending} disabled={!reason.trim() || amount === null} onClick={() => void closeIt(reason)}>Zamknij pakiet</ActionButton>
       <label htmlFor={`token-${value.id}`}>Lekcja pakietu do przywrócenia</label>

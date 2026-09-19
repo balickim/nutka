@@ -9,11 +9,13 @@ import {
 } from "@tanstack/react-router";
 
 import type { PersonaRole } from "./api/scheduling";
-import { getPersonaRedirect } from "./auth/redirect";
+import { getPersonaRedirect, personaHome } from "./auth/redirect";
 import { ensurePersonaSession } from "./auth/session";
 import { updateDocumentTitle } from "./document/title";
 import { LoginView } from "./views/login-view";
-import { HomeView } from "./views/home-view";
+import { LessonsView } from "./views/learner/lessons-view";
+import { PiecesView } from "./views/learner/pieces-view";
+import { StartView } from "./views/learner/start-view";
 import { PersonaEntryView } from "./views/persona-entry-view";
 import { BillingView } from "./views/teacher/billing-view";
 import { StudentsView } from "./views/teacher/students-view";
@@ -22,8 +24,9 @@ import { TodayView } from "./views/teacher/today-view";
 import { AvailabilityView } from "./views/teacher/availability-view";
 import { TeacherCalendarView } from "./views/teacher/teacher-calendar-view";
 
-const personaHome: Record<PersonaRole, string> = { teacher: "/teachers", learner: "/learners/calendar" };
-const personaLogin: Record<PersonaRole, string> = { teacher: "/teachers/login", learner: "/learners/login" };
+const personaLogin = { teacher: "/teachers/login", learner: "/learners/login" } as const satisfies Record<PersonaRole, string>;
+// Login routes keep the post-login target that the persona guard sets.
+const loginSearch = (search: Record<string, unknown>): { redirect?: string } => (typeof search.redirect === "string" ? { redirect: search.redirect } : {});
 
 // A retryable session failure keeps the route so the panel can render its own retry control.
 async function readSession(role: PersonaRole) {
@@ -45,18 +48,45 @@ const rootRoute = createRootRoute({ component: () => <Outlet /> });
 const learnerLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/learners/login",
+  validateSearch: loginSearch,
   beforeLoad: () => skipAuthenticatedPersona("learner"),
   component: () => <LoginView realm="learner" />,
 });
+// The optional `a` parameter selects one learner assignment across every learner screen.
+export type LearnerSearch = { a?: string };
+const learnerSearch = (search: Record<string, unknown>): LearnerSearch => (typeof search.a === "string" && search.a ? { a: search.a } : {});
+
+const learnerStartRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/learners",
+  validateSearch: learnerSearch,
+  beforeLoad: ({ location }) => requirePersona("learner", location.href),
+  component: StartView,
+});
+const learnerLessonsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/learners/lessons",
+  validateSearch: learnerSearch,
+  beforeLoad: ({ location }) => requirePersona("learner", location.href),
+  component: LessonsView,
+});
+const learnerPiecesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/learners/pieces",
+  validateSearch: learnerSearch,
+  beforeLoad: ({ location }) => requirePersona("learner", location.href),
+  component: PiecesView,
+});
+// Saved bookmarks of the former single learner panel open the lessons screen.
 const learnerCalendarRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/learners/calendar",
-  beforeLoad: ({ location }) => requirePersona("learner", location.href),
-  component: HomeView,
+  beforeLoad: () => { throw redirect({ to: "/learners/lessons", replace: true }); },
 });
 const teacherLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/teachers/login",
+  validateSearch: loginSearch,
   beforeLoad: () => skipAuthenticatedPersona("teacher"),
   component: () => <LoginView realm="teacher" />,
 });
@@ -100,6 +130,9 @@ const entryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", com
 const routeTree = rootRoute.addChildren([
   entryRoute,
   learnerLoginRoute,
+  learnerStartRoute,
+  learnerLessonsRoute,
+  learnerPiecesRoute,
   learnerCalendarRoute,
   teacherLoginRoute,
   teacherRoute,

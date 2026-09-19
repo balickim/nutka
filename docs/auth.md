@@ -39,6 +39,8 @@ Request identity fields cannot replace the resolved persona.
 
 - Teacher application routes use `/teachers/*`.
 - Learner application routes use `/learners/*`.
+- The learner home is `/learners`. The teacher home is `/teachers`.
+- After login without a redirect target, each realm opens its home.
 - `/learners` and `/learners/*` use the HTML title `nutka — przestrzeń ucznia`.
 - `/teachers` and `/teachers/*` use the HTML title `nutka — przestrzeń nauczyciela`.
 - Other application routes use the neutral HTML title `nutka`.

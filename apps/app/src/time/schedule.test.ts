@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { futureExceptionDraft, groupSlotsByLocalDate, localInputToUtc, utcToLocalInput } from "./schedule";
+import { formatLocalDate, futureExceptionDraft, groupSlotsByLocalDate, localInputToUtc, utcToLocalInput } from "./schedule";
 
 describe("schedule display boundaries", () => {
   it("round trips a concrete instant through a teacher-local input", () => {
@@ -29,5 +29,11 @@ describe("schedule display boundaries", () => {
     const end = localInputToUtc(draft.end);
     expect(new Date(end).getTime() - new Date(start).getTime()).toBe(45 * 60000);
     expect(draft.start).toMatch(/T\d\d:(00|15|30|45)$/);
+  });
+
+  it("formats a date-only plan value as the same calendar day in every timezone", () => {
+    expect(formatLocalDate("2026-10-14")).toBe("środa, 14 października 2026");
+    expect(formatLocalDate("2026-03-29")).toBe("niedziela, 29 marca 2026");
+    expect(() => formatLocalDate("2026-10-14T00:00:00Z")).toThrow();
   });
 });

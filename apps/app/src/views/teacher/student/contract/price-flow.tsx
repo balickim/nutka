@@ -6,7 +6,7 @@ import { amendContractPrice } from "../../../../api/commercial";
 import type { RegularContract } from "../../../../api/contracts";
 import { FlowPanel } from "../../../../components/flow-panel";
 import { useToast } from "../../../../components/toast";
-import { formatMoney, parseMajor, toMajorInput } from "../../../../money";
+import { currencySymbol, formatMoney, parseMajor, toMajorInput } from "../../../../money";
 import { usePlanMutation } from "../../../../query/commercial";
 import { formatScheduleDate } from "../../../../time/schedule";
 
@@ -24,7 +24,7 @@ export function PriceFlow({ assignmentId, contract }: { assignmentId: string; co
   return <FlowPanel title="Zmiana ceny" openLabel="Zmień cenę" confirmLabel="Zapisz cenę" summary={summary} busy={mutation.isPending} onConfirm={confirm}>
     <label htmlFor={`price-on-${contract.id}`}>Obowiązuje od</label>
     <input id={`price-on-${contract.id}`} type="date" value={effectiveOn} onChange={(event) => setEffectiveOn(event.target.value)} required />
-    <label htmlFor={`price-${contract.id}`}>Cena za lekcję w {contract.currency}</label>
+    <label htmlFor={`price-${contract.id}`}>Cena za lekcję w {currencySymbol(contract.currency)}</label>
     <input id={`price-${contract.id}`} inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} aria-invalid={minor === null} />
     {minor === null ? <p className="field-error">Podaj kwotę, na przykład 50,00.</p> : null}
   </FlowPanel>;

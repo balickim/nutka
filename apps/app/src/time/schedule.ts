@@ -89,3 +89,11 @@ export function isSameLocalDay(value: string, reference: Date, timezone?: string
   const format = (date: Date) => new Intl.DateTimeFormat("en-CA", { ...(timezone ? { timeZone: timezone } : {}), year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
   return format(parseUtcInstant(value)) === format(reference);
 }
+
+// A date-only wall-clock value has no instant, so a UTC formatter keeps the same calendar day in every viewer timezone.
+export function formatLocalDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) throw new Error("Expected a YYYY-MM-DD date");
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+}
