@@ -93,7 +93,7 @@ function ExceptionEdit({ item, onCancel, onSubmit }: { item: CalendarResponse["a
 }
 
 function AvailabilityLessons({ data, policy }: { data: CalendarResponse; policy: Policy }) {
-  return <><section className="panel-section"><h2>Lekcje w {policy.booking_horizon_days} dniach</h2><LessonList lessons={data.near_term_lessons} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} /></section><section className="panel-section"><h2>Dalsze stałe rezerwacje</h2><LessonList lessons={data.later_contract_lessons ?? []} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} /></section></>;
+  return <><section className="panel-section"><h2>Lekcje w {policy.booking_horizon_days} dniach</h2><LessonList lessons={data.near_term_lessons} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section><section className="panel-section"><h2>Dalsze stałe rezerwacje</h2><LessonList lessons={data.later_contract_lessons ?? []} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section></>;
 }
 
 function RuleCreate({ policy, onPreview }: { policy: Policy; onPreview: (value: AvailabilityProposal) => void }) {

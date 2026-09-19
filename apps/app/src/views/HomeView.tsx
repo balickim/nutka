@@ -45,9 +45,8 @@ export function HomeView() {
 }
 
 function LearnerDashboard({ accountId, calendar, assignments, slots, policy }: { accountId: string; calendar: CalendarResponse; assignments: Assignment[]; slots: ReturnType<typeof useLearnerSlots>; policy: Policy }) {
-  const names = new Map(calendar.assignments.map((assignment) => [assignment.teacher, assignmentDisplayName(assignment, "learner")]));
   return <>
-    <section className="panel-section"><h2>Najbliższe lekcje</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} counterpartNames={names} /></section>
+    <section className="panel-section"><h2>Najbliższe lekcje</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} assignments={calendar.assignments} /></section>
     <section className="panel-section"><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Lekcja trwa {policy.lesson_duration_minutes} minut. Przed lekcją i po niej zostaje {policy.participant_buffer_minutes} minut przerwy.</p><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
   </>;
 }
