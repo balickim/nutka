@@ -49,7 +49,7 @@ function LearnerDashboard({ accountId, calendar, assignments, slots, policy }: {
   return <>
     <section className="panel-section"><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Terminy obejmują starty w najbliższych {policy.booking_horizon_days} dniach. Lekcja trwa {policy.lesson_duration_minutes} minut, a kalendarz chroni dodatkowo {policy.participant_buffer_minutes} minut przed i po niej.</p></section>
     <section className="panel-section"><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
-    <section className="panel-section"><h2>Lekcje w horyzoncie</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} counterpartNames={names} /></section>
+    <section className="panel-section"><h2>Najbliższe lekcje</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} counterpartNames={names} /></section>
   </>;
 }
 
@@ -94,12 +94,12 @@ function LearnerAssignmentCard({ accountId, assignment, slots, policy }: { accou
 
 function CommercialSummaryPanel({ details, pending, onNotice }: { details?: CommercialSummary; pending: boolean; onNotice: () => void }) {
   if (pending || !details) return <Skeleton lines={3} label="Ładowanie planu…" />;
-  return <div className="commercial-summary"><strong>{details.active_plan ? planCopy[details.active_plan] : "Brak aktywnego planu"}</strong>{details.package ? <p>Pakiet ważny do {details.package.valid_through}. Dostępne tokeny: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}{details.contract ? <p>Umowa: {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {formatMoney(details.contract.price_minor, details.contract.currency)} za lekcję. Zmiany w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}<p>Oczekujące płatności: {details.payments.pending}. Nieopłacone: {details.payments.intentionally_unpaid}. Kredyt: {formatMoney(details.payments.credit_minor, details.payments.currency)}.</p>{details.contract ? <button className="text-button danger-button" onClick={onNotice}>Złóż wypowiedzenie</button> : null}</div>;
+  return <div className="commercial-summary"><strong>{details.active_plan ? planCopy[details.active_plan] : "Brak aktywnego planu"}</strong>{details.package ? <p>Pakiet ważny do {details.package.valid_through}. Wolne lekcje: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}{details.contract ? <p>Umowa: {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {formatMoney(details.contract.price_minor, details.contract.currency)} za lekcję. Zmiany w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}<p>Oczekujące płatności: {details.payments.pending}. Nieopłacone: {details.payments.intentionally_unpaid}. Nadpłata: {formatMoney(details.payments.credit_minor, details.payments.currency)}.</p>{details.contract ? <button className="text-button danger-button" onClick={onNotice}>Złóż wypowiedzenie</button> : null}</div>;
 }
 
 function BookingPanel({ regular, slots, busy, policy, onBook }: { regular: boolean; slots: Slot[]; busy: string | null; policy: Policy; onBook: (slot: Slot) => void }) {
   if (regular) return <p className="supporting-copy">Stałe terminy wynikają z umowy. Elastyczna rezerwacja jest wyłączona.</p>;
-  return <><p className="supporting-copy">Rezerwacja wymaga {policy.learner_booking_minimum_hours} godz. wyprzedzenia, mieści się w horyzoncie {policy.booking_horizon_days} dni i zaczyna na siatce co {policy.start_grid_minutes} minut.</p><SlotPicker slots={slots} busy={busy} onBook={onBook} /></>;
+  return <><p className="supporting-copy">Rezerwacja wymaga {policy.learner_booking_minimum_hours} godz. wyprzedzenia, mieści się w najbliższych {policy.booking_horizon_days} dniach, a lekcje zaczynają się co {policy.start_grid_minutes} minut.</p><SlotPicker slots={slots} busy={busy} onBook={onBook} /></>;
 }
 
 function LearnerMaterials({ accountId, assignmentId }: { accountId: string; assignmentId: string }) {
@@ -116,13 +116,13 @@ function LearnerHistory({ items }: { items: HistoryEvent[] }) {
 
 function TokenDetails({ details }: { details?: CommercialSummary }) {
   if (!details?.package) return null;
-  return <details><summary>Stany tokenów</summary><p className="supporting-copy">{Object.entries(details.package.token_balance).map(([state, count]) => `${polishTokenState(state)}: ${count}`).join(" · ")}</p></details>;
+  return <details><summary>Lekcje w pakiecie</summary><p className="supporting-copy">{Object.entries(details.package.token_balance).map(([state, count]) => `${polishTokenState(state)}: ${count}`).join(" · ")}</p></details>;
 }
 
 function SlotPicker({ slots, busy, onBook }: { slots: Slot[]; busy: string | null; onBook: (slot: Slot) => void }) {
   const groups = groupSlotsByLocalDate(slots);
-  if (slots.length === 0) return <EmptyState>Brak wolnych terminów w horyzoncie.</EmptyState>;
-  return <div className="slot-groups">{Array.from(groups.entries()).map(([date, items]) => <div className="slot-group" key={date}><h4>{formatScheduleDate(items[0].start_at)}</h4><div className="slot-grid">{items.map((slot) => <button className="slot-button" key={slot.start_at} disabled={busy === slot.start_at} onClick={() => onBook(slot)}>{busy === slot.start_at ? "Zapisywanie…" : formatScheduleInstant(slot.start_at)}<span>{slot.duration_minutes} min · plan dobierze system</span></button>)}</div></div>)}</div>;
+  if (slots.length === 0) return <EmptyState>Brak wolnych terminów w najbliższych dniach.</EmptyState>;
+  return <div className="slot-groups">{Array.from(groups.entries()).map(([date, items]) => <div className="slot-group" key={date}><h4>{formatScheduleDate(items[0].start_at)}</h4><div className="slot-grid">{items.map((slot) => <button className="slot-button" key={slot.start_at} disabled={busy === slot.start_at} onClick={() => onBook(slot)}>{busy === slot.start_at ? "Zapisywanie…" : formatScheduleInstant(slot.start_at)}<span>{slot.duration_minutes} min</span></button>)}</div></div>)}</div>;
 }
 
 function activeOf(calendar: CalendarResponse | undefined): Assignment[] {

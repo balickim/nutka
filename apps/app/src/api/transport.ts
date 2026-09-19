@@ -7,7 +7,7 @@ export type ApiRequestOptions = { method?: string; body?: unknown; signal?: Abor
 
 const intentHeader = { "X-Requested-With": "fetch" };
 const jsonHeader = { "Content-Type": "application/json" };
-const genericError: ApiError = { code: "request_failed", message: "Nie udało się wykonać operacji." };
+const genericError: ApiError = { code: "request_failed", message: "Coś poszło nie tak. Spróbuj ponownie." };
 
 export class ApiRequestError extends Error {
   readonly code: string;

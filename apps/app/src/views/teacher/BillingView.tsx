@@ -60,5 +60,5 @@ function QueueBody({ data, pending, names }: { data?: UnresolvedWorkResponse; pe
 function FinancialHistory({ entries, credits }: { entries: FinancialEntry[]; credits: FinancialEntry[] }) {
   const items = Array.from(new Map([...credits, ...entries].map((entry) => [entry.id, entry])).values()).sort((left, right) => right.event_at.localeCompare(left.event_at));
   if (items.length === 0) return null;
-  return <details className="financial-history"><summary>Kredyty, zwroty i historia rozliczeń</summary><ul className="history-list">{items.map((entry) => <li key={entry.id}><strong>{polishFinancialEntry(entry.entry_type)}</strong> · {formatMoney(entry.amount_minor, entry.currency)} · {formatScheduleInstant(entry.event_at)}</li>)}</ul></details>;
+  return <details className="financial-history"><summary>Nadpłaty, zwroty i historia rozliczeń</summary><ul className="history-list">{items.map((entry) => <li key={entry.id}><strong>{polishFinancialEntry(entry.entry_type)}</strong> · {formatMoney(entry.amount_minor, entry.currency)} · {formatScheduleInstant(entry.event_at)}</li>)}</ul></details>;
 }

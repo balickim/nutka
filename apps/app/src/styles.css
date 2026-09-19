@@ -158,9 +158,8 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .exception-edit input, .exception-edit select { min-width: 130px; padding: .55rem; width: auto; }
 .inline-link { display: inline-block; color: inherit; text-decoration: none; }
 .commercial-columns, .work-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: var(--space-4) 0; }
-.subpanel, .preview-panel { background: var(--surface-sunken); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-5); }
-.subpanel h3, .preview-panel h3 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
-.preview-panel h2 { font-size: var(--text-xl); margin-bottom: var(--space-3); }
+.subpanel { background: var(--surface-sunken); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-5); }
+.subpanel h3 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
 .commercial-summary { border-left: 3px solid var(--color-grass); padding-left: var(--space-4); }
 .commercial-summary p { color: var(--text-muted); font-size: var(--text-sm); margin: var(--space-2) 0; }
 .supporting-copy { color: var(--text-muted); line-height: 1.6; }
@@ -191,7 +190,8 @@ details > summary:hover { color: var(--text); }
 .toast > span { flex: 1; }
 
 .dialog-backdrop { align-items: center; backdrop-filter: blur(4px); background: color-mix(in srgb, var(--color-ink) 40%, transparent); display: grid; inset: 0; justify-items: center; padding: var(--space-4); position: fixed; z-index: 30; }
-.dialog { background: var(--color-cream); border-radius: var(--radius-lg); box-shadow: var(--shadow-lift); display: grid; gap: var(--space-4); max-width: 34rem; padding: var(--space-8); width: 100%; }
+.dialog { background: var(--color-cream); border-radius: var(--radius-lg); box-shadow: var(--shadow-lift); display: grid; gap: var(--space-4); max-height: calc(100vh - var(--space-8)); max-width: 34rem; overflow-y: auto; padding: var(--space-8); width: 100%; }
+.dialog h3 { font-size: var(--text-lg); }
 .dialog h2 { font-size: var(--text-xl); }
 .dialog .supporting-copy { margin: 0; }
 .dialog .row-actions { justify-content: flex-end; }

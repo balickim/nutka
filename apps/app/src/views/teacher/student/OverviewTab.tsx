@@ -23,6 +23,6 @@ function Summary({ details, active }: { details: CommercialSummary; active: bool
     {details.package ? <p>Pakiet ważny do {details.package.valid_through}. Dostępne lekcje: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}
     {details.contract ? <p>Umowa {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {formatMoney(details.contract.price_minor, details.contract.currency)} za lekcję. Pozostałe przełożenia w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}
     {details.active_plan ? null : <EmptyState>Wybierz plan w zakładce Plan, aby zacząć rozliczać lekcje.</EmptyState>}
-    <p>Oczekujące płatności: {details.payments.pending}. Celowo nieopłacone: {details.payments.intentionally_unpaid}. Zaległe: {details.payments.overdue}. Kredyt: {formatMoney(details.payments.credit_minor, details.payments.currency)}.</p>
+    <p>Oczekujące płatności: {details.payments.pending}. Celowo nieopłacone: {details.payments.intentionally_unpaid}. Zaległe: {details.payments.overdue}. Nadpłata: {formatMoney(details.payments.credit_minor, details.payments.currency)}.</p>
   </div>;
 }

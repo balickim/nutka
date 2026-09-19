@@ -18,18 +18,18 @@ export function lessonChangeNotice(action: LessonChangeAction, lesson: Lesson, r
 
 function teacherNotice(action: LessonChangeAction, lesson: Lesson, policy: Policy): string {
   if (action === "reschedule") {
-    if (lesson.plan_type === "package") return "Token pozostanie przypisany do tej lekcji. Potwierdź zmianę terminu.";
+    if (lesson.plan_type === "package") return "Lekcja z pakietu przejdzie na nowy termin. Potwierdź zmianę terminu.";
     if (lesson.plan_type === "regular_contract") return "Zmiana nie wykorzysta limitu ucznia. Potwierdź zmianę terminu.";
     return "Stan rozliczenia pozostanie bez zmian. Potwierdź zmianę terminu.";
   }
-  if (lesson.plan_type === "package") return `Token wróci do pakietu, a ważność wzrośnie o ${policy.teacher_cancellation_extension_days} dni. Kontynuować?`;
+  if (lesson.plan_type === "package") return `Lekcja wróci do pakietu, a jego ważność wzrośnie o ${policy.teacher_cancellation_extension_days} dni. Kontynuować?`;
   if (lesson.plan_type === "regular_contract") return "Lekcja nie będzie naliczona i nie wykorzysta limitu ucznia. Kontynuować?";
   return "Rozliczenie lekcji zostanie oznaczone jako nieobowiązujące. Kontynuować?";
 }
 
 function learnerRescheduleNotice(lesson: Lesson, policy: Policy, timely: boolean, timing: string): string {
   if (!timely) return `Zmiana jest zgłaszana ${timing}. Termin można tylko odwołać.`;
-  if (lesson.plan_type === "package") return `Zmiana jest zgłaszana ${timing}. Ten sam token pozostanie zarezerwowany. Potwierdź zmianę terminu.`;
+  if (lesson.plan_type === "package") return `Zmiana jest zgłaszana ${timing}. Lekcja z pakietu przejdzie na nowy termin. Potwierdź zmianę terminu.`;
   if (lesson.plan_type === "regular_contract") return `Zmiana jest zgłaszana ${timing}. Wykorzystasz jeden z ${policy.contract_monthly_reschedules} miesięcznych terminów zmiany. Nowy termin musi przypadać w ciągu ${policy.contract_replacement_deadline_days} dni. Potwierdź.`;
   return `Zmiana jest zgłaszana ${timing}. Rozliczenie pozostanie bez zmian. Potwierdź zmianę terminu.`;
 }
@@ -37,8 +37,8 @@ function learnerRescheduleNotice(lesson: Lesson, policy: Policy, timely: boolean
 function learnerCancellationNotice(lesson: Lesson, summary: CommercialSummary | undefined, timely: boolean, timing: string): string {
   if (lesson.plan_type === "ad_hoc") return `Odwołanie jest zgłaszane ${timing}. Zostanie zapisane bez kary i bez należności. Kontynuować?`;
   if (lesson.plan_type === "package") return timely
-    ? `Odwołanie jest zgłaszane ${timing}. Token wróci do pakietu. Kontynuować?`
-    : `Odwołanie jest zgłaszane ${timing}. Zarezerwowany token zostanie wykorzystany. Kontynuować?`;
+    ? `Odwołanie jest zgłaszane ${timing}. Lekcja wróci do pakietu. Kontynuować?`
+    : `Odwołanie jest zgłaszane ${timing}. Lekcja z pakietu przepadnie. Kontynuować?`;
   const free = summary?.contract?.remaining_free_cancellations ?? 0;
   if (!timely) return `Odwołanie jest zgłaszane ${timing}. Lekcja pozostanie płatna. Kontynuować?`;
   if (free > 0) return `Odwołanie jest zgłaszane ${timing}. Wykorzystasz jedno z ${free} pozostałych bezpłatnych odwołań. Kontynuować?`;

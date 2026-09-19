@@ -1,14 +1,15 @@
-// Edits teacher availability only through impact preview, explicit conflict resolutions, and one atomic commit.
+// Edits teacher availability only through an impact review dialog, explicit conflict resolutions, and one all-or-nothing save.
 
 import { useState, type FormEvent } from "react";
 
 import { commitAvailability, previewAvailability } from "../../api/commercial";
 import type { AvailabilityConflictResolution, AvailabilityPreview, AvailabilityProposal, CalendarResponse, Policy } from "../../api/contracts";
 import { ApiFeedback } from "../../components/ApiFeedback";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
 import { LessonList } from "../../components/ScheduleBits";
 import { useAvailabilityCommitMutation } from "../../query/commercial";
-import { futureExceptionDraft, localInputToUtc, weekdayLabels } from "../../time/schedule";
+import { formatScheduleInstant, futureExceptionDraft, localInputToUtc, weekdayLabels } from "../../time/schedule";
 
 export function AvailabilityWorkspace({ data, policy, timezone }: { data: CalendarResponse; policy: Policy; timezone: string }) {
   const [preview, setPreview] = useState<AvailabilityPreview | null>(null);
@@ -34,7 +35,7 @@ export function AvailabilityWorkspace({ data, policy, timezone }: { data: Calend
   return <>
     <RulePanel data={data} policy={policy} timezone={timezone} onPreview={inspect} error={previewError || commit.error} />
     <ExceptionPanel data={data} policy={policy} onPreview={inspect} />
-    {preview && proposal ? <PreviewPanel preview={preview} resolutions={resolutions} onResolution={(value) => setResolutions((current) => ({ ...current, [value.lesson]: value }))} onSave={() => void save()} onClose={() => setPreview(null)} busy={commit.isPending} /> : null}
+    {preview && proposal ? <ReviewDialog preview={preview} horizonDays={policy.booking_horizon_days} resolutions={resolutions} onResolution={(value) => setResolutions((current) => ({ ...current, [value.lesson]: value }))} onSave={() => void save()} onClose={() => setPreview(null)} busy={commit.isPending} /> : null}
     <AvailabilityLessons data={data} policy={policy} />
   </>;
 }
@@ -113,8 +114,24 @@ function ExceptionCreate({ policy, onPreview }: { policy: Policy; onPreview: (va
   return <form className="exception-form" onSubmit={submit}><label>Od<input type="datetime-local" step={policy.start_grid_minutes * 60} value={start} onChange={(event) => setStart(event.target.value)} /></label><label>Do<input type="datetime-local" step={policy.start_grid_minutes * 60} value={end} onChange={(event) => setEnd(event.target.value)} /></label><label>Rodzaj<select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}><option value="unavailable">Niedostępny</option><option value="available">Dostępny</option></select></label><label>Notatka<input value={note} onChange={(event) => setNote(event.target.value)} /></label><button className="btn btn-primary btn-sm" type="submit">Sprawdź wyjątek</button></form>;
 }
 
-function PreviewPanel({ preview, resolutions, onResolution, onSave, onClose, busy }: { preview: AvailabilityPreview; resolutions: Record<string, AvailabilityConflictResolution>; onResolution: (value: AvailabilityConflictResolution) => void; onSave: () => void; onClose: () => void; busy: boolean }) {
-  return <section className="preview-panel" role="dialog" aria-label="Skutki zmiany dostępności"><h2>Skutki przed zapisem</h2>{preview.near_term_conflicts.length ? preview.near_term_conflicts.map((conflict) => { const current = resolutions[conflict.lesson]; return <div className="resolution-row" key={conflict.lesson}><p>Lekcja {conflict.lesson} · {conflict.start_at}</p><select aria-label={`Rozwiązanie ${conflict.lesson}`} value={current?.action ?? ""} onChange={(event) => onResolution({ lesson: conflict.lesson, action: event.target.value as "cancel" | "reschedule" })}><option value="" disabled>Wybierz rozwiązanie</option><option value="cancel">Odwołaj</option><option value="reschedule">Przełóż</option></select>{current?.action === "reschedule" ? <input aria-label="Nowy termin" type="datetime-local" onChange={(event) => onResolution({ ...current, replacement_start_at: localInputToUtc(event.target.value) })} /> : null}</div>; }) : <p>Brak kolizji w najbliższych 14 dniach.</p>}<h3>Dalsze skutki automatyczne</h3>{preview.distant_effects.length ? <ul>{preview.distant_effects.map((effect) => <li key={effect.occurrence}>{effect.effect === "omit" ? "Pomiń" : "Przywróć"} {effect.start_at}</li>)}</ul> : <p>Brak dalszych zmian.</p>}<div className="row-actions"><button className="btn btn-primary btn-sm" disabled={busy || !complete(preview, resolutions)} onClick={onSave}>Zapisz wszystko atomowo</button><button className="text-button" onClick={onClose}>Anuluj</button></div></section>;
+type ReviewDialogProps = { preview: AvailabilityPreview; horizonDays: number; resolutions: Record<string, AvailabilityConflictResolution>; onResolution: (value: AvailabilityConflictResolution) => void; onSave: () => void; onClose: () => void; busy: boolean };
+
+function ReviewDialog({ preview, horizonDays, resolutions, onResolution, onSave, onClose, busy }: ReviewDialogProps) {
+  return <ConfirmDialog open title="Skutki zmiany dostępności" consequence="Zapiszemy wszystkie poniższe zmiany razem albo żadnej." confirmLabel="Zapisz zmiany" busy={busy} confirmDisabled={!complete(preview, resolutions)} onConfirm={onSave} onCancel={onClose}>
+    <h3>Lekcje w najbliższych {horizonDays} dniach</h3>
+    {preview.near_term_conflicts.length ? preview.near_term_conflicts.map((conflict) => <ConflictRow key={conflict.lesson} lesson={conflict.lesson} startAt={conflict.start_at} value={resolutions[conflict.lesson]} onChange={onResolution} />) : <p className="supporting-copy">Zmiana nie koliduje z żadną lekcją.</p>}
+    <h3>Dalsze terminy</h3>
+    {preview.distant_effects.length ? <ul className="history-list">{preview.distant_effects.map((effect) => <li key={effect.occurrence}>{formatScheduleInstant(effect.start_at)} · {effect.effect === "omit" ? "lekcja zostanie pominięta" : "lekcja wróci do kalendarza"}</li>)}</ul> : <p className="supporting-copy">Dalsze terminy się nie zmienią.</p>}
+  </ConfirmDialog>;
+}
+
+function ConflictRow({ lesson, startAt, value, onChange }: { lesson: string; startAt: string; value?: AvailabilityConflictResolution; onChange: (value: AvailabilityConflictResolution) => void }) {
+  const when = formatScheduleInstant(startAt);
+  return <div className="resolution-row">
+    <p>Lekcja {when} koliduje ze zmianą.</p>
+    <select aria-label={`Co zrobić z lekcją ${when}`} value={value?.action ?? ""} onChange={(event) => onChange({ lesson, action: event.target.value as "cancel" | "reschedule" })}><option value="" disabled>Wybierz, co zrobić</option><option value="cancel">Odwołaj</option><option value="reschedule">Przełóż</option></select>
+    {value?.action === "reschedule" ? <input aria-label="Nowy termin" type="datetime-local" onChange={(event) => onChange({ ...value, replacement_start_at: localInputToUtc(event.target.value) })} /> : null}
+  </div>;
 }
 
 function complete(preview: AvailabilityPreview, values: Record<string, AvailabilityConflictResolution>): boolean {

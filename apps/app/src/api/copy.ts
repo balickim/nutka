@@ -73,12 +73,12 @@ export const eventCopy: Record<EventType, string> = {
   settlement_changed: "Zmieniono rozliczenie",
   package_purchased: "Kupiono pakiet",
   package_closed: "Zamknięto pakiet",
-  package_token_reserved: "Zarezerwowano token",
-  package_token_used: "Wykorzystano token",
-  package_token_returned: "Zwrócono token",
-  package_token_expired: "Token wygasł",
-  package_token_extended: "Przedłużono ważność tokenu",
-  package_token_invalidated: "Unieważniono token",
+  package_token_reserved: "Zarezerwowano lekcję z pakietu",
+  package_token_used: "Wykorzystano lekcję z pakietu",
+  package_token_returned: "Lekcja wróciła do pakietu",
+  package_token_expired: "Lekcja z pakietu wygasła",
+  package_token_extended: "Przedłużono ważność pakietu",
+  package_token_invalidated: "Unieważniono lekcję z pakietu",
   package_validity_extended: "Przedłużono ważność pakietu",
   contract_activated: "Aktywowano plan regularny",
   contract_schedule_changed: "Zmieniono harmonogram planu",
@@ -92,8 +92,8 @@ export const eventCopy: Record<EventType, string> = {
   charge_created: "Utworzono należność",
   charge_adjusted: "Skorygowano należność",
   payment_recorded: "Zapisano płatność",
-  credit_applied: "Zastosowano kredyt",
-  credit_created: "Utworzono kredyt",
+  credit_applied: "Rozliczono nadpłatę",
+  credit_created: "Zapisano nadpłatę",
   refund_recorded: "Zapisano zwrot",
   availability_consequence: "Zastosowano skutek dostępności",
   availability_changed: "Zmieniono dostępność",
@@ -107,23 +107,23 @@ export const financialEntryCopy: Record<FinancialEntryType, string> = {
   settlement_unpaid: "Oznaczono jako nieopłacone",
   settlement_not_applicable: "Rozliczenie nie dotyczy",
   adjustment: "Skorygowano należność",
-  credit_created: "Utworzono kredyt",
-  credit_applied: "Zastosowano kredyt",
+  credit_created: "Zapisano nadpłatę",
+  credit_applied: "Rozliczono nadpłatę",
   refund: "Zapisano zwrot",
   correction: "Zapisano korektę",
 };
 
 export const errorCopy: Record<string, string> = {
   unauthenticated: "Zaloguj się ponownie, aby kontynuować.",
-  unauthorized: "Nie masz dostępu do tej operacji.",
-  missing_intent: "Nie udało się potwierdzić tej operacji. Spróbuj ponownie.",
+  unauthorized: "Nie masz dostępu do tej czynności.",
+  missing_intent: "Nie udało się tego potwierdzić. Spróbuj ponownie.",
   invalid_request: "Sprawdź wprowadzone dane.",
   invalid_material: "Materiał wymaga tytułu oraz treści lub załącznika. Załączniki to zdjęcia lub PDF do 10 MB.",
   invalid_duration: "Lekcja musi mieć czas trwania określony przez bieżące zasady.",
-  invalid_grid: "Wybierz termin zgodny z bieżącą siatką godzin.",
+  invalid_grid: "Wybierz inną godzinę rozpoczęcia.",
   conflict: "Wybrany termin koliduje z inną lekcją.",
   lesson_conflict: "Wybrany termin koliduje z inną lekcją.",
-  horizon: "Wybierz termin w skonfigurowanym horyzoncie.",
+  horizon: "Ten termin jest zbyt odległy. Wybierz bliższy.",
   duration_override: "Czas lekcji określają bieżące zasady i nie można go zmienić.",
   plan_precedence: "Wybrany plan nie jest dostępny dla tej rezerwacji.",
   learner_change_cutoff: "Na zmianę terminu jest już za późno.",
@@ -131,9 +131,9 @@ export const errorCopy: Record<string, string> = {
   change_cutoff: "Na zmianę terminu jest już za późno.",
   regular_contract_active:
     "Aktywny plan regularny blokuje elastyczną rezerwację.",
-  package_token_available: "Dostępny token pakietu musi zostać użyty.",
-  package_token_exhausted: "Brak dostępnych tokenów.",
-  token_exhausted: "Brak dostępnych tokenów.",
+  package_token_available: "Najpierw wykorzystaj lekcje z pakietu.",
+  package_token_exhausted: "W pakiecie nie ma już wolnych lekcji.",
+  token_exhausted: "W pakiecie nie ma już wolnych lekcji.",
   package_expired: "Pakiet wygasł.",
   package_overlap: "Pakiet koliduje z istniejącym zobowiązaniem.",
   contract_overlap: "Plan regularny koliduje z istniejącym zobowiązaniem.",
@@ -146,7 +146,7 @@ export const errorCopy: Record<string, string> = {
   contract_replacement_deadline: "Termin zastępczy przekracza dozwolony okres.",
   lesson_rescheduled: "Ta lekcja została już przełożona.",
   package_has_future_lessons: "Pakiet ma zaplanowane przyszłe lekcje.",
-  stale_preview: "Dostępność zmieniła się. Wygeneruj podgląd ponownie.",
+  stale_preview: "Dostępność zmieniła się w międzyczasie. Sprawdź zmianę ponownie.",
   invalid_preview_resolution: "Rozwiąż wszystkie konflikty przed zapisaniem.",
   correction_reason_required: "Korekta wymaga podania przyczyny.",
   correction_not_allowed: "Nie można skorygować tego przejścia.",
@@ -158,8 +158,8 @@ export const errorCopy: Record<string, string> = {
   future_date: "Data nie może przypadać w przyszłości.",
   started_lesson: "Rozpoczętej lekcji nie można zmienić.",
   not_found: "Nie znaleziono wskazanego zasobu.",
-  internal_error: "Nie udało się wykonać operacji.",
-  request_failed: "Nie udało się wykonać operacji.",
+  internal_error: "Coś poszło nie tak. Spróbuj ponownie.",
+  request_failed: "Coś poszło nie tak. Spróbuj ponownie.",
 };
 
 export function polishPlan(value: string): string {
@@ -175,17 +175,17 @@ export function polishFinancialEntry(value: string): string {
   return financialEntryCopy[value as FinancialEntryType] || unknown;
 }
 export function polishError(value: string): string {
-  return errorCopy[value] || "Nie udało się wykonać operacji.";
+  return errorCopy[value] || "Coś poszło nie tak. Spróbuj ponownie.";
 }
 export function polishCorrectionReason(value: string): string {
   const labels: Record<CorrectionReason, string> = {
     outcome_correction: "Korekta wyniku",
     settlement_correction: "Korekta rozliczenia",
-    entitlement_correction: "Korekta uprawnienia",
-    ownership_correction: "Korekta własności",
+    entitlement_correction: "Korekta dostępnych lekcji",
+    ownership_correction: "Korekta przypisania",
     backdated_contract: "Wsteczna aktywacja planu",
     early_contract_end: "Wcześniejsze zakończenie planu",
-    token_correction: "Korekta tokenu",
+    token_correction: "Korekta lekcji z pakietu",
     other: "Inna przyczyna",
   };
   return labels[value as CorrectionReason] || unknown;

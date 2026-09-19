@@ -247,7 +247,7 @@ test("regular contract exposes series, learner horizon controls, forecast, notic
   await expect(teacherPage.getByRole("dialog")).toContainText("50,00 PLN za lekcję");
   await teacherPage.getByRole("dialog").getByRole("button", { name: "Aktywuj umowę" }).click();
   await teacherPage.getByText("Seria lekcji").click();
-  await expect(teacherPage.getByText("W horyzoncie")).toBeVisible();
+  await expect(teacherPage.getByText("Najbliższe", { exact: true })).toBeVisible();
   await teacherPage.getByText("Prognozy i należności miesięczne").click();
   await expect(teacherPage.getByText(/2030-09.*150,00 PLN.*prognoza/)).toBeVisible();
   await teacherPage.goto("/teachers/billing");
@@ -302,7 +302,7 @@ test("regular contract exposes series, learner horizon controls, forecast, notic
   await context.close();
 });
 
-test("availability requires explicit near-term resolution and reviews distant omission before atomic commit", async ({ page }) => {
+test("availability requires explicit near-term resolution and reviews distant omission before one save", async ({ page }) => {
   const near = lesson("near-lesson", starts[0], "ad_hoc");
   const later = lesson("later-contract", "2031-03-03T16:00:00Z", "regular_contract");
   let committed = false;
@@ -327,10 +327,10 @@ test("availability requires explicit near-term resolution and reviews distant om
   await expect(page.getByRole("heading", { name: "Lekcje w 12 dniach" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dalsze stałe rezerwacje" })).toBeVisible();
   await page.getByRole("button", { name: "Sprawdź regułę" }).click();
-  const save = page.getByRole("button", { name: "Zapisz wszystko atomowo" });
+  const save = page.getByRole("dialog").getByRole("button", { name: "Zapisz zmiany" });
   await expect(save).toBeDisabled();
-  await expect(page.getByText(/Pomiń 2031-03-03/)).toBeVisible();
-  await page.getByLabel("Rozwiązanie near-lesson").selectOption("cancel");
+  await expect(page.getByRole("dialog")).toContainText("lekcja zostanie pominięta");
+  await page.getByLabel(/Co zrobić z lekcją/).selectOption("cancel");
   await expect(save).toBeEnabled();
   await save.click();
   expect(commitBody).toMatchObject({ preview_version: "opaque-v1", resolutions: [{ lesson: "near-lesson", action: "cancel" }] });

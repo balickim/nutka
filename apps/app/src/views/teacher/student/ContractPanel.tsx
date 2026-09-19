@@ -66,7 +66,7 @@ function activationSummary(startOn: string, weekday: number, startTime: string, 
     `Cena: ${formatMoney(policy.regular_lesson_price_minor, policy.currency)} za lekcję.`,
     `Umowa kończy się ${policy.contract_end_day}.${policy.contract_end_month}.`,
   ];
-  if (converted) parts.push(`Zamieniamy ${converted} lekcji ad hoc na lekcje umowne.`);
+  if (converted) parts.push(`Zamieniamy ${converted} pojedynczych lekcji na lekcje z umowy.`);
   if (backdated) parts.push(`Aktywacja wsteczna obejmuje ${backdated} minionych terminów.`);
   return parts.join(" ");
 }

@@ -31,7 +31,7 @@ function monthList(value?: { months: ContractMonth[] }): ContractMonth[] {
 function SeriesList({ values }: { values?: { near_term: ContractOccurrence[]; later: ContractOccurrence[] } }) {
   const nearTerm = values ? values.near_term : [];
   const later = values ? values.later : [];
-  return <details><summary>Seria lekcji</summary><h4>W horyzoncie</h4><OccurrenceList values={nearTerm} /><h4>Dalsze</h4><OccurrenceList values={later} /></details>;
+  return <details><summary>Seria lekcji</summary><h4>Najbliższe</h4><OccurrenceList values={nearTerm} /><h4>Dalsze</h4><OccurrenceList values={later} /></details>;
 }
 
 function MonthList({ months, contract }: { months: ContractMonth[]; contract: RegularContract }) {
