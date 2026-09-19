@@ -1,4 +1,4 @@
-// Records the outcome of one of today's lessons in a single step, without leaving the Today screen.
+// Records the outcome of one of today's lessons in a single step and then offers the after-lesson note, without leaving the Today screen.
 
 import { useState } from "react";
 
@@ -10,10 +10,11 @@ import { ApiFeedback } from "../../../components/api-feedback";
 import { useToast } from "../../../components/toast";
 import { useOutcomeMutation } from "../../../query/commercial";
 import { formatScheduleInstant } from "../../../time/schedule";
+import { NoteEditor } from "../lesson-note/note-editor";
 
 type Outcome = "completed" | "learner_no_show";
 
-export function TodayLessonCard({ lesson, learner, policy }: { lesson: Lesson; learner?: string; policy: Policy }) {
+export function TodayLessonCard({ accountId, lesson, learner, policy }: { accountId: string; lesson: Lesson; learner?: string; policy: Policy }) {
   const mutation = useOutcomeMutation();
   const { notify } = useToast();
   const [busy, setBusy] = useState<Outcome | null>(null);
@@ -34,5 +35,12 @@ export function TodayLessonCard({ lesson, learner, policy }: { lesson: Lesson; l
       <ActionButton busy={busy === "completed"} onClick={() => void record("completed")}>Odbyta</ActionButton>
       <ActionButton busy={busy === "learner_no_show"} onClick={() => void record("learner_no_show")}>Nieobecność</ActionButton>
     </div> : null}
+    {lesson.outcome === "completed" ? <AfterLesson accountId={accountId} lesson={lesson} /> : null}
   </article>;
+}
+
+function AfterLesson({ accountId, lesson }: { accountId: string; lesson: Lesson }) {
+  const [open, setOpen] = useState(false);
+  if (!open) return <ActionButton onClick={() => setOpen(true)}>Notatka po lekcji</ActionButton>;
+  return <NoteEditor accountId={accountId} assignmentId={lesson.assignment} lessonId={lesson.id} onClose={() => setOpen(false)} />;
 }

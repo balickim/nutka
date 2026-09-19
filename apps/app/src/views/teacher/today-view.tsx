@@ -24,7 +24,7 @@ export function TodayView() {
 function Today({ accountId, calendar, policy }: { accountId: string; calendar: CalendarResponse; policy: Policy }) {
   const names = learnerNames(calendar);
   return <>
-    <TodayLessons lessons={todayLessons(calendar)} names={names} policy={policy} />
+    <TodayLessons accountId={accountId} lessons={todayLessons(calendar)} names={names} policy={policy} />
     <DecisionQueue accountId={accountId} names={names} />
   </>;
 }
@@ -35,12 +35,12 @@ export function todayLessons(calendar: CalendarResponse, now = new Date()): Less
     .sort((left, right) => left.start_at.localeCompare(right.start_at));
 }
 
-function TodayLessons({ lessons, names, policy }: { lessons: Lesson[]; names: ReadonlyMap<string, string>; policy: Policy }) {
+function TodayLessons({ accountId, lessons, names, policy }: { accountId: string; lessons: Lesson[]; names: ReadonlyMap<string, string>; policy: Policy }) {
   return <section className="panel-section">
     <h2>Dzisiejsze lekcje</h2>
     {lessons.length === 0
       ? <EmptyState action={<Link className="btn btn-ghost btn-sm" to="/teachers/calendar">Otwórz kalendarz</Link>}>Dziś nie masz lekcji.</EmptyState>
-      : <div className="lesson-list">{lessons.map((lesson) => <TodayLessonCard key={lesson.id} lesson={lesson} learner={names.get(lesson.assignment)} policy={policy} />)}</div>}
+      : <div className="lesson-list">{lessons.map((lesson) => <TodayLessonCard key={lesson.id} accountId={accountId} lesson={lesson} learner={names.get(lesson.assignment)} policy={policy} />)}</div>}
   </section>;
 }
 

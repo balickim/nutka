@@ -56,6 +56,10 @@ It does not change any backend contract in `docs/api/`.
 - The payments screen shows a ZBP transfer QR code only when transfer details exist and the total fits six digits in grosze.
 - The transfer title names the learner and the open months or lesson dates and holds at most 32 characters.
 - `/teachers/settings` holds the teacher transfer details form.
+- The Start screen shows the latest lesson note of the selected assignment when one exists.
+- `/learners/lessons` lists every lesson note of the selected assignment under the anchor `notatki`.
+- A teacher Today card offers the note editor after the teacher records the outcome `completed`.
+- The teacher learner view has a Notatki tab with the started, not cancelled lessons of the learner, newest first.
 - The `.learner-panel` class raises the type scale and sets a 44-pixel minimum touch target.
 - Below a 720-pixel viewport, the learner navigation is a fixed bar at the bottom of the screen.
 

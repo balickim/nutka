@@ -2,7 +2,7 @@
 
 This document defines the rules that every assignment-scoped learner content type follows.
 Learner content is teaching content that a teacher and a learner share inside one assignment.
-The learner materials are the first learner content type. The [learner materials API](../api/materials.md) defines their endpoints.
+The [learner materials API](../api/materials.md) and the [lesson notes API](../api/lesson-notes.md) define the current learner content types.
 
 ## Scope
 

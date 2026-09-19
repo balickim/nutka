@@ -1,6 +1,6 @@
 // Edits a short formatted text with a minimal toolbar and reports its HTML. The backend sanitizes that HTML before storage.
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 const commands = [
   { label: "B", title: "Pogrubienie", command: "bold" },
@@ -12,8 +12,10 @@ const commands = [
   { label: "1. Lista", title: "Lista numerowana", command: "insertOrderedList" },
 ] as const;
 
-export function RichTextEditor({ label, onChange }: { label: string; onChange: (html: string) => void }) {
+export function RichTextEditor({ label, initialHtml = "", onChange }: { label: string; initialHtml?: string; onChange: (html: string) => void }) {
   const area = useRef<HTMLDivElement>(null);
+  // The initial value is server-sanitized HTML and enters the editable area once, so typing never resets the caret.
+  useEffect(() => { if (area.current) area.current.innerHTML = initialHtml; }, []);
   function run(command: string, value?: string) {
     area.current?.focus();
     // execCommand is deprecated but remains the only dependency-free formatting API for contentEditable.

@@ -70,6 +70,9 @@ export const queryKeys = {
   materialsRoot: (role: PersonaRole) => [root, role, "materials"] as const,
   materials: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "materials", accountId, assignmentId] as const,
+  lessonNotesRoot: (role: PersonaRole) => [root, role, "lesson-notes"] as const,
+  lessonNotes: (role: PersonaRole, accountId: string, assignmentId: string) =>
+    [root, role, "lesson-notes", accountId, assignmentId] as const,
   unresolvedWork: (role: "teacher", accountId: string) =>
     [root, role, "unresolved-work", accountId] as const,
 };
@@ -180,6 +183,14 @@ export const queryRules = {
     effect({
       invalidate: (["teacher", "learner"] as PersonaRole[]).map((role) => ({
         queryKey: queryKeys.materialsRoot(role),
+        predicate: (query) => query.queryKey[4] === assignmentId,
+      })),
+    }),
+  // A lesson note write changes only the note lists of one assignment, for both personas.
+  noteWrite: (assignmentId: string): CacheEffect =>
+    effect({
+      invalidate: (["teacher", "learner"] as PersonaRole[]).map((role) => ({
+        queryKey: queryKeys.lessonNotesRoot(role),
         predicate: (query) => query.queryKey[4] === assignmentId,
       })),
     }),
