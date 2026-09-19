@@ -28,9 +28,9 @@ function Start({ context }: { context: LearnerContext }) {
     <LatestNote accountId={context.accountId} assignmentId={assignment.id} />
     <PaymentCard accountId={context.accountId} assignmentId={assignment.id} />
     <section className="panel-section">
-      <h2>Materiały od nauczyciela</h2>
-      <p className="supporting-copy">Nuty, opracowania i opisy ćwiczeń z lekcji.</p>
-      <Link className="btn btn-ghost btn-sm" to="/learners/pieces" search={search}>Otwórz materiały</Link>
+      <h2>Utwory i materiały</h2>
+      <p className="supporting-copy">Utwory, których się uczysz, ich opracowania i Twoja lista życzeń.</p>
+      <Link className="btn btn-ghost btn-sm" to="/learners/pieces" search={search}>Otwórz utwory</Link>
     </section>
   </>;
 }

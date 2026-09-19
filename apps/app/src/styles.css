@@ -311,3 +311,24 @@ a.assignment-row:hover { border-color: var(--color-ink); box-shadow: var(--shado
 .note-list, .note-lessons { display: grid; gap: var(--space-4); }
 .note-card .lesson-meta { margin: 0 0 var(--space-2); }
 .note-form { margin-top: var(--space-3); }
+
+.repertoire .heading-with-help { margin-bottom: var(--space-3); }
+.piece-group { display: grid; gap: var(--space-3); margin-top: var(--space-5); }
+.piece-group h3 { font-size: var(--text-lg); margin: 0; }
+.piece-list, .piece-rows { display: grid; gap: var(--space-3); }
+.piece-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--space-2); padding: var(--space-4) var(--space-5); }
+.piece-heading h4 { font-size: var(--text-lg); margin: 0; }
+.piece-heading .supporting-copy { margin: 0; }
+.piece-versions[open] > summary { margin-bottom: var(--space-3); }
+.piece-versions .material-card { background: var(--surface-sunken); }
+.wish-list { display: grid; gap: var(--space-2); list-style: none; margin: var(--space-3) 0; padding: 0; }
+.wish-list li { align-items: center; border-bottom: 1px solid var(--border-soft); display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; padding: var(--space-2) 0; }
+.wish-inbox { background: var(--surface-sunken); border-radius: var(--radius-md); margin-bottom: var(--space-5); padding: var(--space-4) var(--space-5); }
+.wish-inbox h3 { margin: 0; }
+.piece-row { align-items: center; border: 1px solid var(--border); border-radius: var(--radius-md); display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; padding: var(--space-3) var(--space-4); }
+.piece-row .lesson-meta { margin: var(--space-1) 0 0; }
+.piece-form { margin-top: var(--space-5); }
+.piece-form h3 { font-size: var(--text-lg); margin: 0; }
+.piece-row select, .material-heading select { width: auto; }
+.piece-rows { margin-bottom: var(--space-2); }
+.pieces-heading { font-size: var(--text-lg); margin: var(--space-2) 0 var(--space-3); }

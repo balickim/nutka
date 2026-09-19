@@ -70,6 +70,9 @@ export const queryKeys = {
   materialsRoot: (role: PersonaRole) => [root, role, "materials"] as const,
   materials: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "materials", accountId, assignmentId] as const,
+  piecesRoot: (role: PersonaRole) => [root, role, "pieces"] as const,
+  pieces: (role: PersonaRole, accountId: string, assignmentId: string) =>
+    [root, role, "pieces", accountId, assignmentId] as const,
   lessonNotesRoot: (role: PersonaRole) => [root, role, "lesson-notes"] as const,
   lessonNotes: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "lesson-notes", accountId, assignmentId] as const,
@@ -114,6 +117,18 @@ const allContractSeries = (): QueryFilters[] => [
   { queryKey: queryKeys.contractSeriesRoot("teacher") },
   { queryKey: queryKeys.contractSeriesRoot("learner") },
 ];
+
+const personas: PersonaRole[] = ["teacher", "learner"];
+const assignmentMaterials = (assignmentId: string): QueryFilters[] =>
+  personas.map((role) => ({
+    queryKey: queryKeys.materialsRoot(role),
+    predicate: (query) => query.queryKey[4] === assignmentId,
+  }));
+const assignmentPieces = (assignmentId: string): QueryFilters[] =>
+  personas.map((role) => ({
+    queryKey: queryKeys.piecesRoot(role),
+    predicate: (query) => query.queryKey[4] === assignmentId,
+  }));
 
 const commercialReadEffects = (assignmentId?: string): QueryFilters[] => [
   ...(assignmentId
@@ -178,13 +193,21 @@ export const queryRules = {
         ...allContractSeries(),
       ],
     }),
-  // A material write changes only the materials of one assignment, for both personas.
+  // A material write changes the materials of one assignment and the material counters of its pieces, for both personas.
   materialWrite: (assignmentId: string): CacheEffect =>
     effect({
-      invalidate: (["teacher", "learner"] as PersonaRole[]).map((role) => ({
-        queryKey: queryKeys.materialsRoot(role),
-        predicate: (query) => query.queryKey[4] === assignmentId,
-      })),
+      invalidate: [
+        ...assignmentMaterials(assignmentId),
+        ...assignmentPieces(assignmentId),
+      ],
+    }),
+  // A piece delete clears material links, so a piece write also refreshes the materials of that assignment.
+  pieceWrite: (assignmentId: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...assignmentPieces(assignmentId),
+        ...assignmentMaterials(assignmentId),
+      ],
     }),
   // A lesson note write changes only the note lists of one assignment, for both personas.
   noteWrite: (assignmentId: string): CacheEffect =>

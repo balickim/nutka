@@ -1,5 +1,5 @@
 // Package materialsapi serves teacher-authored learner materials through persona routes.
-// Teachers add and delete materials of their assignments, learners read their own, and both stream protected files. Persona checks live in personaroute.
+// Teachers add, link to a piece, and delete materials of their assignments, learners read their own, and both stream protected files. Persona checks live in personaroute.
 package materialsapi
 
 import (
@@ -12,6 +12,7 @@ import (
 
 	"github.com/balickim/nutka/apps/backend/internal/materials"
 	"github.com/balickim/nutka/apps/backend/internal/personaroute"
+	"github.com/balickim/nutka/apps/backend/internal/repertoire"
 	"github.com/pocketbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
@@ -31,6 +32,7 @@ type materialDTO struct {
 	Assignment  string          `json:"assignment"`
 	Title       string          `json:"title"`
 	Body        string          `json:"body"`
+	Piece       *string         `json:"piece"`
 	Attachments []attachmentDTO `json:"attachments"`
 	CreatedAt   string          `json:"created_at"`
 }
@@ -42,6 +44,7 @@ func RegisterRoutes(app *pocketbase.PocketBase) {
 		r.GET("/api/teachers/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, personaroute.Teacher) })
 		r.GET("/api/learners/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, personaroute.Learner) })
 		r.POST("/api/teachers/assignments/{id}/materials", createMaterial).Bind(apis.BodyLimit(materials.MaxRequestBytes))
+		r.PATCH("/api/teachers/materials/{id}", pinMaterial)
 		r.DELETE("/api/teachers/materials/{id}", deleteMaterial)
 		r.GET("/api/teachers/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, personaroute.Teacher) })
 		r.GET("/api/learners/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, personaroute.Learner) })
@@ -105,8 +108,13 @@ func newMaterial(e *core.RequestEvent, assignmentID string) (*core.Record, error
 	if err != nil {
 		return nil, err
 	}
+	piece, err := ownedPiece(e.App, assignmentID, e.Request.FormValue(repertoire.MaterialPieceField))
+	if err != nil {
+		return nil, err
+	}
 	record := core.NewRecord(collection)
 	record.Set(materials.AssignmentField, assignmentID)
+	record.Set(repertoire.MaterialPieceField, piece)
 	record.Set(materials.TitleField, title)
 	record.Set(materials.BodyField, body)
 	record.Set(materials.AttachmentsField, files)
@@ -188,6 +196,7 @@ func toDTO(record *core.Record, who personaroute.Role) materialDTO {
 		Assignment:  record.GetString(materials.AssignmentField),
 		Title:       record.GetString(materials.TitleField),
 		Body:        record.GetString(materials.BodyField),
+		Piece:       optional(record.GetString(repertoire.MaterialPieceField)),
 		Attachments: attachments,
 		CreatedAt:   record.GetDateTime("created").Time().UTC().Format(time.RFC3339),
 	}
