@@ -14,10 +14,12 @@ import { ensurePersonaSession } from "./auth/session";
 import { updateDocumentTitle } from "./document/title";
 import { LoginView } from "./views/login-view";
 import { LessonsView } from "./views/learner/lessons-view";
+import { PaymentsView } from "./views/learner/payments-view";
 import { PiecesView } from "./views/learner/pieces-view";
 import { StartView } from "./views/learner/start-view";
 import { PersonaEntryView } from "./views/persona-entry-view";
 import { BillingView } from "./views/teacher/billing-view";
+import { SettingsView } from "./views/teacher/settings-view";
 import { StudentsView } from "./views/teacher/students-view";
 import { StudentView } from "./views/teacher/student-view";
 import { TodayView } from "./views/teacher/today-view";
@@ -77,6 +79,13 @@ const learnerPiecesRoute = createRoute({
   beforeLoad: ({ location }) => requirePersona("learner", location.href),
   component: PiecesView,
 });
+const learnerPaymentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/learners/payments",
+  validateSearch: learnerSearch,
+  beforeLoad: ({ location }) => requirePersona("learner", location.href),
+  component: PaymentsView,
+});
 // Saved bookmarks of the former single learner panel open the lessons screen.
 const learnerCalendarRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -126,6 +135,12 @@ const teacherBillingRoute = createRoute({
   beforeLoad: ({ location }) => requirePersona("teacher", location.href),
   component: BillingView,
 });
+const teacherSettingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/settings",
+  beforeLoad: ({ location }) => requirePersona("teacher", location.href),
+  component: SettingsView,
+});
 const entryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: PersonaEntryView });
 const routeTree = rootRoute.addChildren([
   entryRoute,
@@ -133,6 +148,7 @@ const routeTree = rootRoute.addChildren([
   learnerStartRoute,
   learnerLessonsRoute,
   learnerPiecesRoute,
+  learnerPaymentsRoute,
   learnerCalendarRoute,
   teacherLoginRoute,
   teacherRoute,
@@ -141,6 +157,7 @@ const routeTree = rootRoute.addChildren([
   teacherStudentsRoute,
   teacherStudentRoute,
   teacherBillingRoute,
+  teacherSettingsRoute,
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });

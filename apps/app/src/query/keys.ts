@@ -42,6 +42,11 @@ export const queryKeys = {
     assignmentId: string,
   ) =>
     [root, role, "assignment-summary", accountId, assignmentId, "contracts"] as const,
+  // The payment-due read stays under the summary prefix so every assignment commercial rule also refreshes it.
+  paymentDue: (accountId: string, assignmentId: string) =>
+    [root, "learner", "assignment-summary", accountId, assignmentId, "payment-due"] as const,
+  paymentDetails: (accountId: string) =>
+    [root, "teacher", "payment-details", accountId] as const,
   contractSeriesRoot: (role: PersonaRole) =>
     [root, role, "contract-series"] as const,
   contractSeries: (
@@ -178,6 +183,9 @@ export const queryRules = {
         predicate: (query) => query.queryKey[4] === assignmentId,
       })),
     }),
+  // Transfer details change only the teacher's own details read. Learners read them in their own session.
+  paymentDetailsWrite: (accountId: string): CacheEffect =>
+    effect({ invalidate: [{ queryKey: queryKeys.paymentDetails(accountId) }] }),
   // Logout, expiry, cross-tab logout, a session 401, and account replacement all end the right to read that persona cache.
   // The session entry survives removal because its caller writes the replacing session value into it.
   personaCleared: (role: PersonaRole): CacheEffect =>

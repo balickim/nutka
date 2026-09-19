@@ -120,6 +120,7 @@ export const errorCopy: Record<string, string> = {
   missing_intent: "Nie udało się tego potwierdzić. Spróbuj ponownie.",
   invalid_request: "Sprawdź wprowadzone dane.",
   invalid_material: "Materiał wymaga tytułu oraz treści lub załącznika. Załączniki to zdjęcia lub PDF do 10 MB.",
+  invalid_payment_details: "Sprawdź numer konta. Podaj polski numer konta z 26 cyframi i nazwę odbiorcy.",
   invalid_duration: "Lekcja musi mieć czas trwania określony przez bieżące zasady.",
   invalid_grid: "Wybierz inną godzinę rozpoczęcia.",
   conflict: "Wybrany termin koliduje z inną lekcją.",
@@ -213,4 +214,13 @@ export function learnerHelpCopy(policy: Policy) {
     upcoming: `Lekcje, które zaczynają się w najbliższych ${policy.booking_horizon_days} dniach. Możesz przełożyć lub odwołać lekcję, która jeszcze się nie zaczęła. Przełożenie jest możliwe najpóźniej ${cutoff} godz. przed lekcją. Odwołanie później niż ${cutoff} godz. przed lekcją może być płatne albo wykorzystać lekcję z pakietu.`,
     plan: `Każda lekcja należy do jednego planu: stałej umowy, pakietu albo pojedynczej lekcji. Przy stałej umowie terminy wynikają z umowy. Umowa daje ${policy.contract_monthly_reschedules} przełożenie w miesiącu i ${policy.contract_free_cancellations} bezpłatne odwołania. Bez umowy rezerwacja najpierw wykorzystuje wolną lekcję z pakietu, a potem jest pojedynczą lekcją.`,
   };
+}
+
+// Polish nouns take one of three forms after a number: 1 lekcja, 2–4 lekcje, 5 lekcji, but 22 lekcje and 12 lekcji.
+export function lessonCount(count: number): string {
+  const tens = count % 100;
+  const ones = count % 10;
+  if (count === 1) return "1 lekcja";
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return `${count} lekcje`;
+  return `${count} lekcji`;
 }

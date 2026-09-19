@@ -49,6 +49,18 @@ func serveFinancialHistory(e *core.RequestEvent, service Service, role string) e
 	return e.JSON(http.StatusOK, result)
 }
 
+func servePaymentDue(e *core.RequestEvent, service Service) error {
+	actor, err := authenticatedActor(e, ledger.LearnerActor)
+	if err != nil {
+		return handleError(e, err)
+	}
+	result, err := service.PaymentDue(e.Request.Context(), actor, e.Request.PathValue("id"))
+	if err != nil {
+		return handleError(e, err)
+	}
+	return e.JSON(http.StatusOK, result)
+}
+
 func serveContractMonths(e *core.RequestEvent, service Service, role string) error {
 	actor, err := authenticatedActor(e, role)
 	if err != nil {

@@ -21,6 +21,7 @@ const screens = [
   { to: "/teachers/students", label: "Uczniowie" },
   { to: "/teachers/billing", label: "Rozliczenia" },
   { to: "/teachers/availability", label: "Dostępność" },
+  { to: "/teachers/settings", label: "Ustawienia" },
 ] as const;
 
 export function TeacherShell({ lede, children }: { lede: string; children: (context: TeacherContext) => ReactNode }) {

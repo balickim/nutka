@@ -2,6 +2,8 @@
 // Learner views intentionally contain only assignment-owned commercial values.
 package ledgerapi
 
+import "github.com/balickim/nutka/apps/backend/internal/paymentdetails"
+
 // FinancialWork is the teacher's bounded actionable payment and outcome queue.
 type FinancialWork struct {
 	Charges []ChargeView         `json:"charges"`
@@ -122,4 +124,45 @@ type LessonPayment struct {
 	AmountMinor     int64  `json:"amount_minor"`
 	Currency        string `json:"currency"`
 	SettlementState string `json:"settlement_state"`
+}
+
+// PaymentDue tells one learner what to pay for one assignment and how to pay it.
+type PaymentDue struct {
+	AssignmentID    string                  `json:"assignment"`
+	Currency        string                  `json:"currency"`
+	TotalMinor      int64                   `json:"total_minor"`
+	Items           []DueItemView           `json:"items"`
+	OpenCreditMinor int64                   `json:"open_credit_minor"`
+	NextForecast    *DueForecast            `json:"next_forecast"`
+	RecentPayments  []RecentPayment         `json:"recent_payments"`
+	Instructions    *paymentdetails.Details `json:"instructions"`
+}
+
+// DueItemView is one open amount. Lesson items carry the lesson start and contract items carry the month.
+type DueItemView struct {
+	ChargeID      string `json:"charge"`
+	Kind          string `json:"kind"`
+	Period        string `json:"period,omitempty"`
+	LessonStartAt string `json:"lesson_start_at,omitempty"`
+	AmountMinor   int64  `json:"amount_minor"`
+	DueOn         string `json:"due_on,omitempty"`
+	Overdue       bool   `json:"overdue"`
+}
+
+// DueForecast is the earliest future contract month without a charge.
+type DueForecast struct {
+	Month       string `json:"month"`
+	LessonCount int    `json:"lesson_count"`
+	AmountMinor int64  `json:"amount_minor"`
+	DueOn       string `json:"due_on"`
+}
+
+// RecentPayment is one charge that the teacher recorded as paid.
+type RecentPayment struct {
+	ChargeID      string `json:"charge"`
+	Kind          string `json:"kind"`
+	Period        string `json:"period,omitempty"`
+	LessonStartAt string `json:"lesson_start_at,omitempty"`
+	AmountMinor   int64  `json:"amount_minor"`
+	PaidAt        string `json:"paid_at"`
 }

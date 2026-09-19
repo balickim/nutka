@@ -14,6 +14,7 @@ import (
 	"github.com/balickim/nutka/apps/backend/internal/historyapi"
 	"github.com/balickim/nutka/apps/backend/internal/ledgerapi"
 	"github.com/balickim/nutka/apps/backend/internal/materialsapi"
+	"github.com/balickim/nutka/apps/backend/internal/paymentdetailsapi"
 	"github.com/balickim/nutka/apps/backend/internal/regularcontractapi"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingapi"
 	"github.com/balickim/nutka/apps/backend/internal/schedulingstore"
@@ -51,6 +52,7 @@ func configureAppWithClock(app *pocketbase.PocketBase, clock schedulingapi.Clock
 	commercialapi.RegisterRoutesWithClock(app, commercialapi.Clock(clock))
 	historyapi.RegisterRoutes(app)
 	materialsapi.RegisterRoutes(app)
+	paymentdetailsapi.RegisterRoutes(app)
 	contractRepository := regularcontractapi.NewPocketBaseRepository(app, regularcontractapi.Clock(clock))
 	regularcontractapi.RegisterRoutes(app, regularcontractapi.New(contractRepository, regularcontractapi.Clock(clock)))
 	ledgerService := ledgerapi.NewPocketBaseService(app, func() time.Time { return clock() })
