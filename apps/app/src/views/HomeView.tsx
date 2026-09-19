@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { contractStatusCopy, planCopy, polishEvent, polishTokenState } from "../api/copy";
+import { contractStatusCopy, learnerHelpCopy, learnerMaterialsHelp, planCopy, polishEvent, polishTokenState } from "../api/copy";
 import { bookFlexibleLesson, submitContractNotice } from "../api/commercial";
 import type { CommercialSummary, HistoryEvent, Policy } from "../api/contracts";
 import { assignmentDisplayName, type Assignment, type CalendarResponse, type Slot } from "../api/scheduling";
@@ -12,6 +12,7 @@ import { authenticatedRecord, personaDisplayName, usePersonaLogout, usePersonaSe
 import { ApiFeedback } from "../components/ApiFeedback";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
+import { HelpHeading } from "../components/HelpHeading";
 import { PanelFrame } from "../components/PanelFrame";
 import { Skeleton } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
@@ -45,9 +46,10 @@ export function HomeView() {
 }
 
 function LearnerDashboard({ accountId, calendar, assignments, slots, policy }: { accountId: string; calendar: CalendarResponse; assignments: Assignment[]; slots: ReturnType<typeof useLearnerSlots>; policy: Policy }) {
+  const help = learnerHelpCopy(policy);
   return <>
-    <section className="panel-section"><h2>Najbliższe lekcje</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} assignments={calendar.assignments} /></section>
-    <section className="panel-section"><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Lekcja trwa {policy.lesson_duration_minutes} minut. Przed lekcją i po niej zostaje {policy.participant_buffer_minutes} minut przerwy.</p><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
+    <section className="panel-section"><HelpHeading title="Najbliższe lekcje" help={help.upcoming} /><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} assignments={calendar.assignments} /></section>
+    <section className="panel-section"><HelpHeading title="Twój plan i rezerwacje" help={help.plan} /><p className="supporting-copy">Lekcja trwa {policy.lesson_duration_minutes} minut. Przed lekcją i po niej zostaje {policy.participant_buffer_minutes} minut przerwy.</p><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
   </>;
 }
 
@@ -107,7 +109,7 @@ function LearnerBooking({ assignment, slots, policy }: { assignment: Assignment;
 
 function LearnerMaterials({ accountId, assignmentId }: { accountId: string; assignmentId: string }) {
   const materials = useQuery(materialsQuery("learner", accountId, assignmentId));
-  return <section className="learner-materials"><h4>Materiały od nauczyciela</h4>
+  return <section className="learner-materials"><HelpHeading level={4} title="Materiały od nauczyciela" help={learnerMaterialsHelp} />
     {materials.error ? <ApiFeedback error={materials.error} onRetry={() => void materials.refetch()} /> : null}
     {materials.isPending ? <Skeleton lines={3} label="Ładowanie materiałów…" /> : <MaterialList items={materials.data?.items ?? []} empty="Nauczyciel nie dodał jeszcze materiałów." />}
   </section>;

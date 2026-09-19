@@ -212,7 +212,9 @@ details > summary:hover { color: var(--text); }
 .tooltip-body { background: var(--color-ink); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift); color: var(--color-cream); font-size: var(--text-xs); font-weight: 400; line-height: 1.5; opacity: 0; padding: var(--space-2) var(--space-3); font-family: var(--font-sans); letter-spacing: 0; pointer-events: none; position: absolute; text-align: left; top: calc(100% + var(--space-2)); transition: opacity .15s ease; visibility: hidden; width: max-content; max-width: 18rem; z-index: 5; }
 .tooltip-start { left: 0; }
 .tooltip-end { right: 0; }
-.heading-with-help { align-items: center; display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.heading-with-help { align-items: center; display: flex; gap: var(--space-2); margin-bottom: var(--space-4); position: relative; }
+/* Heading tooltips anchor to the heading row, so a long title on a narrow screen cannot push the text off screen. */
+.heading-with-help .tooltip { position: static; }
 .heading-with-help h2 { font-size: var(--text-xl); }
 .section-heading .heading-with-help { margin-bottom: 0; }
 .tooltip:hover .tooltip-body, .tooltip:focus-within .tooltip-body { opacity: 1; visibility: visible; }
@@ -264,7 +266,8 @@ a.assignment-row:hover { border-color: var(--color-ink); box-shadow: var(--shado
 .material-files { display: grid; gap: var(--space-1); list-style: none; margin: 0; padding: 0; }
 .material-files a { color: var(--text); font-size: var(--text-sm); font-weight: 600; text-decoration-color: var(--color-grass); text-decoration-thickness: 2px; text-underline-offset: .25em; }
 .learner-materials { border-top: 1px solid var(--border); padding-top: var(--space-4); }
-.learner-materials h4 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+.learner-materials h4 { font-size: var(--text-lg); margin: 0; }
+.learner-materials .heading-with-help { margin-bottom: var(--space-3); }
 .rich-text { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .rich-text:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
 .rich-text-toolbar { border-bottom: 1px solid var(--border-soft); display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1); }

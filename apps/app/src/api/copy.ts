@@ -203,3 +203,14 @@ export function availabilityHelpCopy(policy: Policy) {
     laterContract: `Lekcje ze stałych umów, które zaczynają się później niż za ${horizon} dni. Już rezerwują Twój czas. Gdy zmiana dostępności je obejmie, zostaną pominięte bez opłaty i bez zużycia limitów ucznia. Po przywróceniu dostępności wrócą do kalendarza.`,
   };
 }
+
+// Explains the learner panel sections in everyday words. Texts restate docs/constitutions/scheduling.md and docs/api/materials.md.
+export const learnerMaterialsHelp = "Materiały dodaje Twój nauczyciel: tekst, zdjęcia i pliki PDF. Najnowsze są na górze. Widzisz tylko materiały od nauczyciela z tej karty.";
+
+export function learnerHelpCopy(policy: Policy) {
+  const cutoff = policy.learner_booking_minimum_hours;
+  return {
+    upcoming: `Lekcje, które zaczynają się w najbliższych ${policy.booking_horizon_days} dniach. Możesz przełożyć lub odwołać lekcję, która jeszcze się nie zaczęła. Przełożenie jest możliwe najpóźniej ${cutoff} godz. przed lekcją. Odwołanie później niż ${cutoff} godz. przed lekcją może być płatne albo wykorzystać lekcję z pakietu.`,
+    plan: `Każda lekcja należy do jednego planu: stałej umowy, pakietu albo pojedynczej lekcji. Przy stałej umowie terminy wynikają z umowy. Umowa daje ${policy.contract_monthly_reschedules} przełożenie w miesiącu i ${policy.contract_free_cancellations} bezpłatne odwołania. Bez umowy rezerwacja najpierw wykorzystuje wolną lekcję z pakietu, a potem jest pojedynczą lekcją.`,
+  };
+}

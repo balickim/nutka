@@ -8,6 +8,7 @@ import { availabilityHelpCopy } from "../../api/copy";
 import { ApiFeedback } from "../../components/ApiFeedback";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
+import { HelpHeading } from "../../components/HelpHeading";
 import { LessonList } from "../../components/ScheduleBits";
 import { Tooltip } from "../../components/Tooltip";
 import { useAvailabilityCommitMutation } from "../../query/commercial";
@@ -136,10 +137,6 @@ function ConflictRow({ lesson, startAt, value, onChange }: { lesson: string; sta
     <select aria-label={`Co zrobić z lekcją ${when}`} value={value?.action ?? ""} onChange={(event) => onChange({ lesson, action: event.target.value as "cancel" | "reschedule" })}><option value="" disabled>Wybierz, co zrobić</option><option value="cancel">Odwołaj</option><option value="reschedule">Przełóż</option></select>
     {value?.action === "reschedule" ? <input aria-label="Nowy termin" type="datetime-local" onChange={(event) => onChange({ ...value, replacement_start_at: localInputToUtc(event.target.value) })} /> : null}
   </div>;
-}
-
-function HelpHeading({ title, help }: { title: string; help: string }) {
-  return <div className="heading-with-help"><h2>{title}</h2><Tooltip label={`Co oznacza „${title}”?`} text={help} /></div>;
 }
 
 function complete(preview: AvailabilityPreview, values: Record<string, AvailabilityConflictResolution>): boolean {
