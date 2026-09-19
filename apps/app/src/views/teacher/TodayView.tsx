@@ -39,7 +39,7 @@ function TodayLessons({ lessons, names, policy }: { lessons: Lesson[]; names: Re
   return <section className="panel-section">
     <h2>Dzisiejsze lekcje</h2>
     {lessons.length === 0
-      ? <EmptyState action={<Link className="secondary-button" to="/teachers/calendar">Otwórz kalendarz</Link>}>Dziś nie masz lekcji.</EmptyState>
+      ? <EmptyState action={<Link className="btn btn-ghost btn-sm" to="/teachers/calendar">Otwórz kalendarz</Link>}>Dziś nie masz lekcji.</EmptyState>
       : <div className="lesson-list">{lessons.map((lesson) => <TodayLessonCard key={lesson.id} lesson={lesson} learner={names.get(lesson.assignment)} policy={policy} />)}</div>}
   </section>;
 }
@@ -67,6 +67,6 @@ export function decisionItems(data: UnresolvedWorkResponse, names: ReadonlyMap<s
 function QueueList({ data, pending, names }: { data?: UnresolvedWorkResponse; pending: boolean; names: ReadonlyMap<string, string> }) {
   if (pending || !data) return <Skeleton lines={3} label="Ładowanie kolejki…" />;
   const items = decisionItems(data, names);
-  if (items.length === 0) return <EmptyState action={<Link className="secondary-button" to="/teachers/students">Otwórz listę uczniów</Link>}>Nic nie czeka na Twoją decyzję.</EmptyState>;
-  return <ul className="decision-queue">{items.map((item) => <li key={item.id}><span>{item.text}</span>{item.actionable ? <Link className="secondary-button" to="/teachers/billing">Rozlicz</Link> : null}</li>)}</ul>;
+  if (items.length === 0) return <EmptyState action={<Link className="btn btn-ghost btn-sm" to="/teachers/students">Otwórz listę uczniów</Link>}>Nic nie czeka na Twoją decyzję.</EmptyState>;
+  return <ul className="decision-queue">{items.map((item) => <li key={item.id}><span>{item.text}</span>{item.actionable ? <Link className="btn btn-ghost btn-sm" to="/teachers/billing">Rozlicz</Link> : null}</li>)}</ul>;
 }

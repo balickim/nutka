@@ -58,7 +58,13 @@ It does not change any backend contract in `docs/api/`.
 
 ## Design tokens
 
-- The file `apps/app/src/styles.css` defines every space, type, radius, and color token in `:root`.
+- The package `packages/ui` (`@nutka/ui`) defines the shared palette, fonts, card radii, and shadow in `tokens.css`.
+- The app and the landing page import `@nutka/ui` tokens, fonts, base typography, and component classes. Neither app copies a palette value.
+- The shared component classes are `.brand`, `.eyebrow`, `.card`, `.btn`, `.btn-primary`, `.btn-accent`, `.btn-ghost`, `.btn-sm`, and `.marker`.
+- The app uses `.btn-primary` for the main action, `.btn-ghost` for secondary actions, and `.text-button` for low-emphasis actions.
+- The file `apps/app/src/styles.css` maps the shared palette to semantic app tokens in `:root` and defines the space and type scales.
+- The landing page maps the shared tokens to Tailwind utilities with `@theme inline reference` in `apps/landing/src/styles/tokens.css`.
+- The green `--color-grass` token appears only as a fill or under dark text. It never colors text.
 - A rule references a token and holds no literal color, spacing, or radius value.
 - The space scale uses four-pixel steps. The type scale holds seven steps and one display step.
 - A status uses a color and a word together, so color alone never carries the meaning.

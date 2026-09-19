@@ -1,0 +1,126 @@
+/* Wspólne elementy UI Nutki jako klasy CSS bez frameworka: znak marki, eyebrow, przyciski, zakreślacz, karta.
+   Warstwa components pozwala utility Tailwinda na landingu i stylom aplikacji nadpisać szczegóły. */
+
+@layer components {
+  /* Znak marki: nazwa krojem display i zielona kropka. Kropka jest kształtem, bo zieleń nie przechodzi kontrastu jako tekst. */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  .brand::after {
+    content: "";
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background-color: var(--color-grass);
+  }
+
+  .eyebrow {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .card {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background-color: var(--color-cream);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 0.95rem 1.6rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .btn-primary {
+    background-color: var(--color-ink);
+    color: var(--color-cream);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-ink-soft);
+  }
+
+  /* Ciemny tekst na zieleni daje 5,8:1. Odwrotnie (biały tekst) byłoby 2,8:1 i nie przeszłoby AA. */
+  .btn-accent {
+    background-color: var(--color-grass);
+    color: var(--color-ink);
+  }
+
+  .btn-accent:hover:not(:disabled) {
+    background-color: var(--color-grass-deep);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    border-color: var(--color-line);
+    color: var(--color-ink);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-cream-deep);
+  }
+
+  .btn-sm {
+    padding: 0.6rem 1.1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Zaznaczenie zakreślaczem. Gradient na tle tekstu, a nie osobny element pozycjonowany
+     absolutnie — dzięki temu podkreślenie łamie się razem z tekstem i kończy dokładnie tam,
+     gdzie kończy się ostatnia linia. */
+  .marker {
+    background-image: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--color-grass) 42%, transparent) 0 0.28em,
+      transparent 0.28em
+    );
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn {
+      transition: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}

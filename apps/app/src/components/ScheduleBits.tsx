@@ -135,15 +135,15 @@ function LessonStatusDetails({ lesson, role }: { lesson: Lesson; role: PersonaRo
 
 function FutureLessonActions({ visible, canReschedule, editing, busy, onEdit, onCancel }: { visible: boolean; canReschedule: boolean; editing: boolean; busy: boolean; onEdit: () => void; onCancel: () => void }) {
   if (!visible) return null;
-  return <div className="lesson-actions">{canReschedule ? <button className="secondary-button" onClick={onEdit} disabled={busy}>{editing ? "Zamknij" : "Przełóż"}</button> : null}<button className="text-button danger-button" onClick={onCancel} disabled={busy}>Odwołaj</button></div>;
+  return <div className="lesson-actions">{canReschedule ? <button className="btn btn-ghost btn-sm" onClick={onEdit} disabled={busy}>{editing ? "Zamknij" : "Przełóż"}</button> : null}<button className="text-button danger-button" onClick={onCancel} disabled={busy}>Odwołaj</button></div>;
 }
 
 function RescheduleForm({ visible, lessonId, start, busy, notice, onStart, onSubmit }: { visible: boolean; lessonId: string; start: string; busy: boolean; notice: string; onStart: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
   if (!visible) return null;
-  return <form className="inline-form" onSubmit={onSubmit}><label htmlFor={`start-${lessonId}`}>Nowy termin</label><input id={`start-${lessonId}`} type="datetime-local" value={start} onChange={(event) => onStart(event.target.value)} required /><p className="supporting-copy">{notice}</p><button className="primary-button" type="submit" disabled={busy}>Zapisz termin</button></form>;
+  return <form className="inline-form" onSubmit={onSubmit}><label htmlFor={`start-${lessonId}`}>Nowy termin</label><input id={`start-${lessonId}`} type="datetime-local" value={start} onChange={(event) => onStart(event.target.value)} required /><p className="supporting-copy">{notice}</p><button className="btn btn-primary btn-sm" type="submit" disabled={busy}>Zapisz termin</button></form>;
 }
 
 function OutcomeForm({ visible, lessonId, value, busy, onChange, onSubmit }: { visible: boolean; lessonId: string; value: "completed" | "learner_no_show"; busy: boolean; onChange: (value: "completed" | "learner_no_show") => void; onSubmit: (value: "completed" | "learner_no_show") => void }) {
   if (!visible) return null;
-  return <form className="inline-form" onSubmit={(event) => { event.preventDefault(); onSubmit(value); }}><label htmlFor={`outcome-${lessonId}`}>Wynik lekcji</label><select id={`outcome-${lessonId}`} value={value} onChange={(event) => onChange(event.target.value as typeof value)}><option value="completed">Zrealizowana</option><option value="learner_no_show">Nieobecność ucznia</option></select><p className="supporting-copy">Domyślny wybór nie zostanie zapisany bez potwierdzenia.</p><button className="primary-button" type="submit" disabled={busy}>Zapisz wynik</button></form>;
+  return <form className="inline-form" onSubmit={(event) => { event.preventDefault(); onSubmit(value); }}><label htmlFor={`outcome-${lessonId}`}>Wynik lekcji</label><select id={`outcome-${lessonId}`} value={value} onChange={(event) => onChange(event.target.value as typeof value)}><option value="completed">Zrealizowana</option><option value="learner_no_show">Nieobecność ucznia</option></select><p className="supporting-copy">Domyślny wybór nie zostanie zapisany bez potwierdzenia.</p><button className="btn btn-primary btn-sm" type="submit" disabled={busy}>Zapisz wynik</button></form>;
 }

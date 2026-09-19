@@ -2,6 +2,8 @@
 
 Nutka is a music-teaching starter monorepo with an Astro landing page, a React scheduling app, and a Go/PocketBase backend.
 
+The landing page and the app share one visual language from `packages/ui` (`@nutka/ui`): design tokens, self-hosted fonts, base typography, and framework-free component classes such as buttons, the brand mark, and the eyebrow label.
+
 ## Prerequisites
 
 - Node.js 22.19+ and npm 10+

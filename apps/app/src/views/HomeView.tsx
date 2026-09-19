@@ -12,6 +12,7 @@ import { authenticatedRecord, personaDisplayName, usePersonaLogout, usePersonaSe
 import { ApiFeedback } from "../components/ApiFeedback";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
+import { PanelFrame } from "../components/PanelFrame";
 import { Skeleton } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 import { formatMoney } from "../money";
@@ -36,7 +37,7 @@ export function HomeView() {
   if (session.isError) return <SessionUnavailable onRetry={() => void session.refetch()} />;
   if (!record) return null;
   async function handleLogout() { await logout.mutateAsync(); await router.navigate({ to: "/learners/login" }); }
-  const frame = (children: React.ReactNode) => <PanelFrame title={`Cześć, ${personaDisplayName(record)}.`} onLogout={() => void handleLogout()}>{children}</PanelFrame>;
+  const frame = (children: React.ReactNode) => <PanelFrame eyebrow="Panel ucznia" name={personaDisplayName(record)} lede="Planuj lekcje z przypisanymi nauczycielami." onLogout={() => void handleLogout()}>{children}</PanelFrame>;
   const panelError = [calendar.error, policy.error, slots.error].find(Boolean);
   if (panelError) return frame(<ApiFeedback error={panelError} onRetry={() => { void calendar.refetch(); void policy.refetch(); slots.refetch(); }} />);
   if (!calendar.data || !policy.data || slots.pending) return frame(<Skeleton lines={5} label="Ładowanie kalendarza…" />);
@@ -46,7 +47,7 @@ export function HomeView() {
 function LearnerDashboard({ accountId, calendar, assignments, slots, policy }: { accountId: string; calendar: CalendarResponse; assignments: Assignment[]; slots: ReturnType<typeof useLearnerSlots>; policy: Policy }) {
   const names = new Map(calendar.assignments.map((assignment) => [assignment.teacher, assignmentDisplayName(assignment, "learner")]));
   return <>
-    <section className="panel-section"><p className="eyebrow">nutka / uczeń</p><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Terminy obejmują starty w najbliższych {policy.booking_horizon_days} dniach. Lekcja trwa {policy.lesson_duration_minutes} minut, a kalendarz chroni dodatkowo {policy.participant_buffer_minutes} minut przed i po niej.</p></section>
+    <section className="panel-section"><h2>Twój plan i rezerwacje</h2><p className="supporting-copy">Terminy obejmują starty w najbliższych {policy.booking_horizon_days} dniach. Lekcja trwa {policy.lesson_duration_minutes} minut, a kalendarz chroni dodatkowo {policy.participant_buffer_minutes} minut przed i po niej.</p></section>
     <section className="panel-section"><div className="assignment-grid"><AssignmentCards accountId={accountId} assignments={assignments} slots={slots} policy={policy} /></div></section>
     <section className="panel-section"><h2>Lekcje w horyzoncie</h2><LessonList lessons={calendar.near_term_lessons} role="learner" policy={policy} commercialSummaries={calendar.commercial_summaries} counterpartNames={names} /></section>
   </>;
@@ -129,9 +130,5 @@ function activeOf(calendar: CalendarResponse | undefined): Assignment[] {
 }
 
 function SessionUnavailable({ onRetry }: { onRetry: () => void }) {
-  return <main className="center-shell"><section className="status-card" role="alert"><h1>{authCopy.unavailable}</h1><button className="secondary-button" onClick={onRetry}>{authCopy.retry}</button></section></main>;
-}
-
-function PanelFrame({ title, onLogout, children }: { title: string; onLogout: () => void; children: React.ReactNode }) {
-  return <main className="panel-shell"><header className="panel-header"><div className="panel-identity"><p className="wordmark">nutka</p><h1>{title}</h1></div><button className="text-button" onClick={onLogout}>{authCopy.logout}</button></header><p className="panel-lede">Planuj lekcje z przypisanymi nauczycielami.</p>{children}</main>;
+  return <main className="center-shell"><section className="status-card" role="alert"><h1>{authCopy.unavailable}</h1><button className="btn btn-ghost btn-sm" onClick={onRetry}>{authCopy.retry}</button></section></main>;
 }
