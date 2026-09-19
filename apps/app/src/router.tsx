@@ -15,7 +15,12 @@ import { updateDocumentTitle } from "./document/title";
 import { LoginView } from "./views/LoginView";
 import { HomeView } from "./views/HomeView";
 import { PersonaEntryView } from "./views/PersonaEntryView";
-import { TeacherView } from "./views/TeacherView";
+import { BillingView } from "./views/teacher/BillingView";
+import { StudentsView } from "./views/teacher/StudentsView";
+import { StudentView } from "./views/teacher/StudentView";
+import { TodayView } from "./views/teacher/TodayView";
+import { AvailabilityView } from "./views/teacher/AvailabilityView";
+import { TeacherCalendarView } from "./views/teacher/TeacherCalendarView";
 
 const personaHome: Record<PersonaRole, string> = { teacher: "/teachers", learner: "/learners/calendar" };
 const personaLogin: Record<PersonaRole, string> = { teacher: "/teachers/login", learner: "/learners/login" };
@@ -59,13 +64,37 @@ const teacherRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/teachers",
   beforeLoad: ({ location }) => requirePersona("teacher", location.href),
-  component: TeacherView,
+  component: TodayView,
 });
 const teacherAvailabilityRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/teachers/availability",
   beforeLoad: ({ location }) => requirePersona("teacher", location.href),
-  component: () => <TeacherView availability />,
+  component: AvailabilityView,
+});
+const teacherCalendarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/calendar",
+  beforeLoad: ({ location }) => requirePersona("teacher", location.href),
+  component: TeacherCalendarView,
+});
+const teacherStudentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/students",
+  beforeLoad: ({ location }) => requirePersona("teacher", location.href),
+  component: StudentsView,
+});
+const teacherStudentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/students/$assignmentId",
+  beforeLoad: ({ location }) => requirePersona("teacher", location.href),
+  component: StudentView,
+});
+const teacherBillingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/teachers/billing",
+  beforeLoad: ({ location }) => requirePersona("teacher", location.href),
+  component: BillingView,
 });
 const entryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: PersonaEntryView });
 const routeTree = rootRoute.addChildren([
@@ -75,6 +104,10 @@ const routeTree = rootRoute.addChildren([
   teacherLoginRoute,
   teacherRoute,
   teacherAvailabilityRoute,
+  teacherCalendarRoute,
+  teacherStudentsRoute,
+  teacherStudentRoute,
+  teacherBillingRoute,
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });

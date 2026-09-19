@@ -1,4 +1,4 @@
-// Provides reusable feedback and plan-aware lesson lifecycle controls for teacher and learner panels.
+// Provides plan-aware lesson lifecycle controls shared by the teacher and learner panels.
 
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -9,17 +9,14 @@ import {
   rescheduleCommercialLesson,
 } from "../api/commercial";
 import type { CommercialSummary, Lesson, PersonaRole, Policy } from "../api/contracts";
-import { getSchedulingErrorMessage } from "../api/scheduling";
 import { useLifecycleMutation, useOutcomeMutation } from "../query/commercial";
+import { formatMoney } from "../money";
 import { formatScheduleInstant, localInputToUtc, utcToLocalInput } from "../time/schedule";
+import { ApiFeedback } from "./ApiFeedback";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { useToast } from "./Toast";
+import { EmptyState } from "./EmptyState";
 import { learnerChangeIsTimely, lessonChangeNotice } from "./lesson-consequences";
-
-export function ApiFeedback({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  if (!error) return null;
-  return <div className="panel-error" role="alert"><span>{getSchedulingErrorMessage(error)}</span>{onRetry ? <button className="text-button" onClick={onRetry}>Spróbuj ponownie</button> : null}</div>;
-}
-
-export function EmptyState({ children }: { children: string }) { return <p className="empty-state">{children}</p>; }
 
 export function canManageLesson(lesson: Lesson, now = Date.now()): boolean {
   return lesson.schedule_state === "scheduled" && Date.parse(lesson.start_at) > now;
@@ -41,28 +38,39 @@ export function LessonList({ lessons, role, policy, commercialSummaries = [], co
   const [busy, setBusy] = useState<string | null>(null);
   const lifecycle = useLifecycleMutation();
   const outcome = useOutcomeMutation();
+  const { notify } = useToast();
+  const [pending, setPending] = useState<{ lesson: Lesson; kind: "reschedule" | "cancel"; start?: string } | null>(null);
+  const summaryOf = (lesson: Lesson) => commercialSummaries.find((item) => item.assignment === lesson.assignment);
   async function reschedule(lesson: Lesson, start: string) {
-    const summary = commercialSummaries.find((item) => item.assignment === lesson.assignment);
-    if (!window.confirm(lessonChangeNotice("reschedule", lesson, role, policy, summary))) return;
     setBusy(lesson.id);
     try {
       await lifecycle.mutateAsync({ assignmentId: lesson.assignment, write: () => rescheduleCommercialLesson(role, lesson.id, { start_at: localInputToUtc(start) }) });
+      notify("Lekcja przełożona.");
       setEditing(null);
     } finally { setBusy(null); }
   }
   async function cancel(lesson: Lesson) {
-    const summary = commercialSummaries.find((item) => item.assignment === lesson.assignment);
-    if (!window.confirm(lessonChangeNotice("cancel", lesson, role, policy, summary))) return;
     setBusy(lesson.id);
-    try { await lifecycle.mutateAsync({ assignmentId: lesson.assignment, write: () => cancelCommercialLesson(role, lesson.id) }); }
-    finally { setBusy(null); }
+    try {
+      await lifecycle.mutateAsync({ assignmentId: lesson.assignment, write: () => cancelCommercialLesson(role, lesson.id) });
+      notify("Lekcja odwołana.");
+    } finally { setBusy(null); }
+  }
+  async function confirmPending() {
+    if (!pending) return;
+    const request = pending;
+    setPending(null);
+    if (request.kind === "cancel") await cancel(request.lesson);
+    else if (request.start) await reschedule(request.lesson, request.start);
   }
   async function close(lesson: Lesson, value: "completed" | "learner_no_show") {
     setBusy(lesson.id);
-    try { await outcome.mutateAsync({ assignmentId: lesson.assignment, write: () => recordLessonOutcome(lesson.id, { outcome: value }) }); }
-    finally { setBusy(null); }
+    try {
+      await outcome.mutateAsync({ assignmentId: lesson.assignment, write: () => recordLessonOutcome(lesson.id, { outcome: value }) });
+      notify(`Zapisano wynik: ${outcomeCopy[value]}.`);
+    } finally { setBusy(null); }
   }
-  return <div className="lesson-list"><ApiFeedback error={lifecycle.error || outcome.error} />{lessons.length === 0 ? <EmptyState>Nie masz jeszcze żadnych lekcji.</EmptyState> : lessons.map((lesson) => <LessonCard key={lesson.id} lesson={lesson} role={role} policy={policy} summary={commercialSummaries.find((item) => item.assignment === lesson.assignment)} counterpartNames={counterpartNames} editing={editing === lesson.id} busy={busy === lesson.id} onEdit={() => setEditing(editing === lesson.id ? null : lesson.id)} onReschedule={(start) => void reschedule(lesson, start)} onCancel={() => void cancel(lesson)} onOutcome={(value) => void close(lesson, value)} />)}{!hasUpcomingLessons(lessons) && lessons.length > 0 ? <p className="supporting-copy">Brak nadchodzących lekcji.</p> : null}</div>;
+  return <div className="lesson-list"><ApiFeedback error={lifecycle.error || outcome.error} />{lessons.length === 0 ? <EmptyState>Nie masz jeszcze żadnych lekcji.</EmptyState> : lessons.map((lesson) => <LessonCard key={lesson.id} lesson={lesson} role={role} policy={policy} summary={commercialSummaries.find((item) => item.assignment === lesson.assignment)} counterpartNames={counterpartNames} editing={editing === lesson.id} busy={busy === lesson.id} onEdit={() => setEditing(editing === lesson.id ? null : lesson.id)} onReschedule={(start) => setPending({ lesson, kind: "reschedule", start })} onCancel={() => setPending({ lesson, kind: "cancel" })} onOutcome={(value) => void close(lesson, value)} />)}{!hasUpcomingLessons(lessons) && lessons.length > 0 ? <p className="supporting-copy">Brak nadchodzących lekcji.</p> : null}<ConfirmDialog open={Boolean(pending)} title={pending?.kind === "cancel" ? "Odwołanie lekcji" : "Przełożenie lekcji"} consequence={pending ? lessonChangeNotice(pending.kind, pending.lesson, role, policy, summaryOf(pending.lesson)) : ""} confirmLabel={pending?.kind === "cancel" ? "Odwołaj lekcję" : "Przełóż lekcję"} danger={pending?.kind === "cancel"} busy={lifecycle.isPending} onConfirm={() => void confirmPending()} onCancel={() => setPending(null)} /></div>;
 }
 
 type LessonCardProps = {
@@ -83,20 +91,42 @@ function LessonCard({ lesson, role, policy, summary, counterpartNames, editing, 
   const [start, setStart] = useState(() => utcToLocalInput(lesson.start_at));
   const [selectedOutcome, setSelectedOutcome] = useState<"completed" | "learner_no_show">("completed");
   useEffect(() => setStart(utcToLocalInput(lesson.start_at)), [lesson.start_at]);
+  const state = lessonCardState(lesson, role, policy, summary);
+  function submit(event: FormEvent) { event.preventDefault(); onReschedule(start); }
+  return <article className={`lesson-card ${state.cancelledClass}`}>
+    <LessonHeading lesson={lesson} role={role} counterpartNames={counterpartNames} />
+    <LessonStatusDetails lesson={lesson} role={role} />
+    <FutureLessonActions visible={state.future} canReschedule={state.canReschedule} editing={editing} busy={busy} onEdit={onEdit} onCancel={onCancel} />
+    {state.showNotice ? <p className="supporting-copy">{state.rescheduleNotice}</p> : null}
+    <RescheduleForm visible={editing && state.future && state.canReschedule} lessonId={lesson.id} start={start} busy={busy} notice={state.rescheduleNotice} onStart={setStart} onSubmit={submit} />
+    <OutcomeForm visible={state.awaiting} lessonId={lesson.id} value={selectedOutcome} busy={busy} onChange={setSelectedOutcome} onSubmit={onOutcome} />
+  </article>;
+}
+
+function lessonCardState(lesson: Lesson, role: PersonaRole, policy: Policy, summary?: CommercialSummary) {
   const future = canManageLesson(lesson);
   const canReschedule = role === "teacher" || learnerChangeIsTimely(lesson, policy);
-  const rescheduleNotice = lessonChangeNotice("reschedule", lesson, role, policy, summary);
-  const awaiting = role === "teacher" && lesson.schedule_state === "scheduled" && Date.parse(lesson.end_at) <= Date.now() && (!lesson.outcome || lesson.outcome === "awaiting_outcome");
-  function submit(event: FormEvent) { event.preventDefault(); onReschedule(start); }
-  return <article className={`lesson-card ${lesson.schedule_state === "scheduled" ? "" : "lesson-cancelled"}`}>
+  return {
+    future,
+    canReschedule,
+    showNotice: future && !canReschedule,
+    cancelledClass: lesson.schedule_state === "scheduled" ? "" : "lesson-cancelled",
+    rescheduleNotice: lessonChangeNotice("reschedule", lesson, role, policy, summary),
+    awaiting: awaitingOutcome(lesson, role),
+  };
+}
+
+function awaitingOutcome(lesson: Lesson, role: PersonaRole): boolean {
+  if (role !== "teacher" || lesson.schedule_state !== "scheduled") return false;
+  if (Date.parse(lesson.end_at) > Date.now()) return false;
+  return !lesson.outcome || lesson.outcome === "awaiting_outcome";
+}
+
+function LessonHeading({ lesson, role, counterpartNames }: { lesson: Lesson; role: PersonaRole; counterpartNames?: ReadonlyMap<string, string> }) {
+  return <>
     <div className="lesson-heading"><div><p className="eyebrow">{planCopy[lesson.plan_type]}</p><h3>{lessonParticipantName(lesson, role, counterpartNames)}</h3></div><span className={`status-badge status-${lesson.schedule_state}`}>{scheduleStateCopy[lesson.schedule_state]}</span></div>
-    <p className="lesson-meta">{formatScheduleInstant(lesson.start_at)} – {formatScheduleInstant(lesson.end_at)} · {lesson.duration_minutes} min · {(lesson.unit_price_minor / 100).toFixed(0)} {lesson.currency}</p>
-    <LessonStatusDetails lesson={lesson} role={role} />
-    <FutureLessonActions visible={future} canReschedule={canReschedule} editing={editing} busy={busy} onEdit={onEdit} onCancel={onCancel} />
-    {!canReschedule && future ? <p className="supporting-copy">{rescheduleNotice}</p> : null}
-    <RescheduleForm visible={editing && future && canReschedule} lessonId={lesson.id} start={start} busy={busy} notice={rescheduleNotice} onStart={setStart} onSubmit={submit} />
-    <OutcomeForm visible={awaiting} lessonId={lesson.id} value={selectedOutcome} busy={busy} onChange={setSelectedOutcome} onSubmit={onOutcome} />
-  </article>;
+    <p className="lesson-meta">{formatScheduleInstant(lesson.start_at)} – {formatScheduleInstant(lesson.end_at)} · {lesson.duration_minutes} min · {formatMoney(lesson.unit_price_minor, lesson.currency)}</p>
+  </>;
 }
 
 function LessonStatusDetails({ lesson, role }: { lesson: Lesson; role: PersonaRole }) {
