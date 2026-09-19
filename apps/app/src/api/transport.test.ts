@@ -30,6 +30,16 @@ describe("API transport boundary", () => {
     expect(JSON.parse(String(init.body))).toEqual({ start_at: "2026-01-15T12:00:00Z" });
   });
 
+  it("sends a multipart body without a JSON content type so the browser sets the boundary", async () => {
+    const mock = stubFetch(new Response(JSON.stringify({ id: "m1" }), { status: 201 }));
+    const form = new FormData();
+    form.append("title", "Gamy");
+    await apiRequest("/api/teachers/assignments/a1/materials", { method: "POST", body: form });
+    const [, init] = mock.mock.calls[0] as [string, RequestInit];
+    expect(init.body).toBe(form);
+    expect(init.headers).toEqual({ "X-Requested-With": "fetch" });
+  });
+
   it("returns decoded JSON and no body for an empty response", async () => {
     stubFetch(new Response(JSON.stringify({ teacher: "t1" }), { status: 200 }));
     await expect(apiRequest("/api/teachers/calendar")).resolves.toEqual({ teacher: "t1" });

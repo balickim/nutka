@@ -1,4 +1,4 @@
-// Renders the learner's horizon calendar, commercial balances, plan-aware booking, notice, and redacted history.
+// Renders the learner's horizon calendar, commercial balances, plan-aware booking, notice, teacher materials, and redacted history.
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,7 +16,9 @@ import { Skeleton } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 import { formatMoney } from "../money";
 import { LessonList } from "../components/ScheduleBits";
+import { MaterialList } from "../components/MaterialList";
 import { businessPolicyQuery, commercialSummaryQuery, historyQuery, useBookingMutation, usePlanMutation } from "../query/commercial";
+import { materialsQuery } from "../query/materials";
 import { learnerCalendarQuery, useLearnerSlots } from "../query/scheduling";
 import { router } from "../router";
 import { formatScheduleDate, formatScheduleInstant, groupSlotsByLocalDate } from "../time/schedule";
@@ -83,6 +85,7 @@ function LearnerAssignmentCard({ accountId, assignment, slots, policy }: { accou
     <CommercialSummaryPanel details={summary.data} pending={summary.isPending} onNotice={() => setNoticeOpen(true)} />
     <ConfirmDialog open={noticeOpen} title="Wypowiedzenie umowy" consequence={contract ? `Umowa zakończy się ${formatScheduleDate(`${contract.end_on}T12:00:00Z`)}. Lekcje po tej dacie znikną z kalendarza.` : ""} confirmLabel="Złóż wypowiedzenie" danger busy={plan.isPending} onConfirm={() => void notice()} onCancel={() => setNoticeOpen(false)} />
     <BookingPanel regular={summary.data?.active_plan === "regular_contract"} slots={slots} busy={busy} policy={policy} onBook={(slot) => void book(slot)} />
+    <LearnerMaterials accountId={accountId} assignmentId={assignment.id} />
     <LearnerHistory items={history.data?.items ?? []} />
     <TokenDetails details={summary.data} />
   </article>;
@@ -96,6 +99,14 @@ function CommercialSummaryPanel({ details, pending, onNotice }: { details?: Comm
 function BookingPanel({ regular, slots, busy, policy, onBook }: { regular: boolean; slots: Slot[]; busy: string | null; policy: Policy; onBook: (slot: Slot) => void }) {
   if (regular) return <p className="supporting-copy">Stałe terminy wynikają z umowy. Elastyczna rezerwacja jest wyłączona.</p>;
   return <><p className="supporting-copy">Rezerwacja wymaga {policy.learner_booking_minimum_hours} godz. wyprzedzenia, mieści się w horyzoncie {policy.booking_horizon_days} dni i zaczyna na siatce co {policy.start_grid_minutes} minut.</p><SlotPicker slots={slots} busy={busy} onBook={onBook} /></>;
+}
+
+function LearnerMaterials({ accountId, assignmentId }: { accountId: string; assignmentId: string }) {
+  const materials = useQuery(materialsQuery("learner", accountId, assignmentId));
+  return <section className="learner-materials"><h4>Materiały od nauczyciela</h4>
+    {materials.error ? <ApiFeedback error={materials.error} onRetry={() => void materials.refetch()} /> : null}
+    {materials.isPending ? <Skeleton lines={3} label="Ładowanie materiałów…" /> : <MaterialList items={materials.data?.items ?? []} empty="Nauczyciel nie dodał jeszcze materiałów." />}
+  </section>;
 }
 
 function LearnerHistory({ items }: { items: HistoryEvent[] }) {

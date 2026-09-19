@@ -1,6 +1,6 @@
 # Nutka documentation
 
-This directory contains the contracts for Nutka authentication, scheduling, and commercial lesson plans.
+This directory contains the contracts for Nutka authentication, scheduling, commercial lesson plans, and learner materials.
 
 ## Contract order
 
@@ -28,6 +28,7 @@ This directory contains the contracts for Nutka authentication, scheduling, and 
 - [Payments API](api/payments.md) defines settlement, charges, credits, and refunds.
 - [Business history API](api/history.md) defines immutable role-scoped events.
 - [Teacher unresolved work API](api/unresolved-work.md) defines actionable teacher work.
+- [Learner materials API](api/materials.md) defines teacher-authored text, image, and PDF materials.
 - [Scheduling errors](api/errors.md) defines shared status and error codes.
 
 ## Change workflow

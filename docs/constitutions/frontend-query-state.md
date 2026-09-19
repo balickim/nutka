@@ -6,8 +6,8 @@ It does not change any backend contract in `docs/api/`.
 ## Authority
 
 - The shared TanStack Query cache is the single authority for frontend server state.
-- Every authentication, policy, scheduling, commercial, payment, and history read uses a query.
-- Every authentication, scheduling, commercial, payment, and correction write uses a mutation.
+- Every authentication, policy, scheduling, commercial, payment, history, and material read uses a query.
+- Every authentication, scheduling, commercial, payment, correction, and material write uses a mutation.
 - The application creates one QueryClient in `apps/app/src/query/client.ts`.
 - One QueryClientProvider wraps the router.
 - Route guards and components use the same QueryClient.
@@ -33,6 +33,7 @@ It does not change any backend contract in `docs/api/`.
 | Financial work | `["nutka", role, "financial-work", accountId]` |
 | Assignment history | `["nutka", role, "history", assignmentId]` |
 | Teacher unresolved work | `["nutka", "teacher", "unresolved-work", teacherId]` |
+| Assignment materials | `["nutka", role, "materials", accountId, assignmentId]` |
 
 - The session key uses the role because the account is unknown before the first read.
 - Each owned data key contains the authenticated account identifier or assignment identifier.
@@ -58,6 +59,7 @@ It does not change any backend contract in `docs/api/`.
 | `outcomeWrite` | Invalidates calendars, affected summary, unresolved work, financial work, and history. |
 | `settlementWrite` | Invalidates calendars, affected summary, financial work, unresolved work, and history. |
 | `correctionWrite` | Invalidates calendars, affected summary, slots, contract series, financial work, unresolved work, and history. |
+| `materialWrite` | Invalidates the teacher and learner materials of the changed assignment. |
 | `personaCleared` | Cancels every request of one role and removes the owned data of that role. |
 
 - A lesson change invalidates every learner slot query because conflicts cross assignments.
@@ -72,6 +74,7 @@ It does not change any backend contract in `docs/api/`.
 
 - The file `apps/app/src/api/transport.ts` is the only module that calls the Fetch API.
 - The transport builds the URL, sends `credentials: "include"`, and decodes JSON.
+- The transport sends a `FormData` body as multipart and lets the browser set its content type.
 - The transport sends `X-Requested-With: fetch` on every mutation.
 - The transport forwards the AbortSignal supplied by the query cache.
 - The transport raises ApiRequestError with the stable error code and HTTP status.
