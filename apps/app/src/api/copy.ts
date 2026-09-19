@@ -7,6 +7,7 @@ import type {
   FinancialEntryType,
   LessonOutcomeState,
   PlanType,
+  Policy,
   ScheduleState,
   SettlementState,
   TokenState,
@@ -189,4 +190,16 @@ export function polishCorrectionReason(value: string): string {
     other: "Inna przyczyna",
   };
   return labels[value as CorrectionReason] || unknown;
+}
+
+// Explains the availability screen sections in everyday words. Each text restates rules from docs/constitutions/scheduling.md.
+export function availabilityHelpCopy(policy: Policy) {
+  const horizon = policy.booking_horizon_days;
+  return {
+    timezone: "Strefa czasowa Twojego kalendarza. Wszystkie godziny dostępności i lekcji podajemy według czasu w tej strefie.",
+    weeklyPlan: `Bez reguł cały tydzień jest niedostępny. Każda włączona reguła otwiera godziny w jednym dniu tygodnia i obowiązuje co tydzień, bez daty końca. Przed zapisem zobaczysz skutki zmiany. Każdą kolidującą lekcję w najbliższych ${horizon} dniach musisz odwołać albo przełożyć.`,
+    exceptions: "Wyjątek dotyczy konkretnego okresu. „Dostępny” dodaje godziny poza planem tygodniowym. „Niedostępny” zabiera godziny i ma pierwszeństwo przed planem. Nutka nie uwzględnia świąt ani dni wolnych sama, więc dodaj je jako wyjątki.",
+    nearTerm: `Lekcje, które zaczynają się w najbliższych ${horizon} dniach. Tak daleko naprzód można rezerwować. Uczeń rezerwuje co najmniej ${policy.learner_booking_minimum_hours} godz. przed lekcją, a Ty możesz później. Każda lekcja blokuje też ${policy.participant_buffer_minutes} minut przed i po sobie. Odwołana lekcja nie wróci po przywróceniu dostępności.`,
+    laterContract: `Lekcje ze stałych umów, które zaczynają się później niż za ${horizon} dni. Już rezerwują Twój czas. Gdy zmiana dostępności je obejmie, zostaną pominięte bez opłaty i bez zużycia limitów ucznia. Po przywróceniu dostępności wrócą do kalendarza.`,
+  };
 }

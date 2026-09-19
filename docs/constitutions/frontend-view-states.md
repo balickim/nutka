@@ -58,6 +58,7 @@ It does not change any backend contract in `docs/api/`.
 - The interface uses one term for each concept on every screen.
 - The interface uses everyday words. It does not show technical terms such as "atomowo", "token", "horyzont", or "ad hoc".
 - Polish copy lives in `apps/app/src/api/copy.ts`.
+- A section help tooltip restates rules from the relevant constitution in everyday words. It does not add rules.
 
 ## Design tokens
 

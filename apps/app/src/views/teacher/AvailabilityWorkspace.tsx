@@ -4,10 +4,12 @@ import { useState, type FormEvent } from "react";
 
 import { commitAvailability, previewAvailability } from "../../api/commercial";
 import type { AvailabilityConflictResolution, AvailabilityPreview, AvailabilityProposal, CalendarResponse, Policy } from "../../api/contracts";
+import { availabilityHelpCopy } from "../../api/copy";
 import { ApiFeedback } from "../../components/ApiFeedback";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
 import { LessonList } from "../../components/ScheduleBits";
+import { Tooltip } from "../../components/Tooltip";
 import { useAvailabilityCommitMutation } from "../../query/commercial";
 import { formatScheduleInstant, futureExceptionDraft, localInputToUtc, weekdayLabels } from "../../time/schedule";
 
@@ -40,7 +42,8 @@ export function AvailabilityWorkspace({ data, policy, timezone }: { data: Calend
   </>;
 }
 function RulePanel({ data, policy, timezone, onPreview, error }: { data: CalendarResponse; policy: Policy; timezone: string; onPreview: (value: AvailabilityProposal) => Promise<void>; error: unknown }) {
-  return <section className="panel-section"><div className="section-heading"><div><p className="eyebrow">nutka / dostępność</p><h2>Tygodniowy plan</h2></div><span className="timezone-badge">{timezone}</span></div><p className="supporting-copy">Każda zmiana najpierw pokazuje skutki. W najbliższych {policy.booking_horizon_days} dniach musisz rozwiązać każdą kolizję.</p><ApiFeedback error={error} /><RuleCreate policy={policy} onPreview={(value) => void onPreview(value)} /><RuleList rules={data.availability_rules} onPreview={onPreview} /></section>;
+  const help = availabilityHelpCopy(policy);
+  return <section className="panel-section"><div className="section-heading"><div><p className="eyebrow">nutka / dostępność</p><HelpHeading title="Tygodniowy plan" help={help.weeklyPlan} /></div><span className="badge-with-help"><span className="timezone-badge">{timezone}</span><Tooltip align="end" label="Co oznacza strefa czasowa?" text={help.timezone} /></span></div><p className="supporting-copy">Każda zmiana najpierw pokazuje skutki. W najbliższych {policy.booking_horizon_days} dniach musisz rozwiązać każdą kolizję.</p><ApiFeedback error={error} /><RuleCreate policy={policy} onPreview={(value) => void onPreview(value)} /><RuleList rules={data.availability_rules} onPreview={onPreview} /></section>;
 }
 
 function RuleList({ rules, onPreview }: { rules: CalendarResponse["availability_rules"]; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
@@ -68,7 +71,7 @@ function RuleEdit({ rule, onCancel, onSubmit }: { rule: CalendarResponse["availa
 }
 
 function ExceptionPanel({ data, policy, onPreview }: { data: CalendarResponse; policy: Policy; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
-  return <section className="panel-section"><h2>Wyjątki dat</h2><ExceptionCreate policy={policy} onPreview={(value) => void onPreview(value)} /><ExceptionList values={data.availability_exceptions} onPreview={onPreview} /></section>;
+  return <section className="panel-section"><HelpHeading title="Wyjątki dat" help={availabilityHelpCopy(policy).exceptions} /><ExceptionCreate policy={policy} onPreview={(value) => void onPreview(value)} /><ExceptionList values={data.availability_exceptions} onPreview={onPreview} /></section>;
 }
 
 function ExceptionList({ values, onPreview }: { values: CalendarResponse["availability_exceptions"]; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
@@ -93,7 +96,8 @@ function ExceptionEdit({ item, onCancel, onSubmit }: { item: CalendarResponse["a
 }
 
 function AvailabilityLessons({ data, policy }: { data: CalendarResponse; policy: Policy }) {
-  return <><section className="panel-section"><h2>Lekcje w {policy.booking_horizon_days} dniach</h2><LessonList lessons={data.near_term_lessons} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section><section className="panel-section"><h2>Dalsze stałe rezerwacje</h2><LessonList lessons={data.later_contract_lessons ?? []} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section></>;
+  const help = availabilityHelpCopy(policy);
+  return <><section className="panel-section"><HelpHeading title={`Lekcje w ${policy.booking_horizon_days} dniach`} help={help.nearTerm} /><LessonList lessons={data.near_term_lessons} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section><section className="panel-section"><HelpHeading title="Dalsze stałe rezerwacje" help={help.laterContract} /><LessonList lessons={data.later_contract_lessons ?? []} role="teacher" policy={policy} commercialSummaries={data.commercial_summaries} assignments={data.assignments} /></section></>;
 }
 
 function RuleCreate({ policy, onPreview }: { policy: Policy; onPreview: (value: AvailabilityProposal) => void }) {
@@ -132,6 +136,10 @@ function ConflictRow({ lesson, startAt, value, onChange }: { lesson: string; sta
     <select aria-label={`Co zrobić z lekcją ${when}`} value={value?.action ?? ""} onChange={(event) => onChange({ lesson, action: event.target.value as "cancel" | "reschedule" })}><option value="" disabled>Wybierz, co zrobić</option><option value="cancel">Odwołaj</option><option value="reschedule">Przełóż</option></select>
     {value?.action === "reschedule" ? <input aria-label="Nowy termin" type="datetime-local" onChange={(event) => onChange({ ...value, replacement_start_at: localInputToUtc(event.target.value) })} /> : null}
   </div>;
+}
+
+function HelpHeading({ title, help }: { title: string; help: string }) {
+  return <div className="heading-with-help"><h2>{title}</h2><Tooltip label={`Co oznacza „${title}”?`} text={help} /></div>;
 }
 
 function complete(preview: AvailabilityPreview, values: Record<string, AvailabilityConflictResolution>): boolean {
