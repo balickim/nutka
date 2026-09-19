@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import { createAppQueryClient } from "../query/client";
-import { ToastProvider } from "./Toast";
+import { ToastProvider } from "./toast";
 
 export function withAppProviders(children: ReactNode) {
   return <QueryClientProvider client={createAppQueryClient()}><ToastProvider>{children}</ToastProvider></QueryClientProvider>;
