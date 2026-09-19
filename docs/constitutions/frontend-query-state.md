@@ -26,7 +26,10 @@ It does not change any backend contract in `docs/api/`.
 | Persona calendar | `["nutka", role, "calendar", accountId]` |
 | Learner assignment slots | `["nutka", "learner", "slots", learnerId, assignmentId]` |
 | Assignment commercial summary | `["nutka", role, "assignment-summary", assignmentId]` |
+| Assignment packages | `["nutka", role, "assignment-summary", accountId, assignmentId, "packages"]` |
+| Assignment contracts | `["nutka", role, "assignment-summary", accountId, assignmentId, "contracts"]` |
 | Teacher contract series | `["nutka", "teacher", "contract-series", assignmentId, contractId]` |
+| Teacher contract months | `["nutka", "teacher", "contract-series", assignmentId, contractId, "months"]` |
 | Financial work | `["nutka", role, "financial-work", accountId]` |
 | Assignment history | `["nutka", role, "history", assignmentId]` |
 | Teacher unresolved work | `["nutka", "teacher", "unresolved-work", teacherId]` |
@@ -36,6 +39,8 @@ It does not change any backend contract in `docs/api/`.
 - A different account reads a different key for the same role.
 - A learner key cannot address teacher-owned contract, financial, or history data.
 - Policy data is keyed by role to prevent cross-realm cache reuse.
+- A package key, a contract key, and a contract month key extend the key of the read they belong to.
+- An extended key inherits the cache rule of its prefix.
 
 ## Cache rules
 

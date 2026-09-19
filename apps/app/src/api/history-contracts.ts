@@ -61,4 +61,6 @@ export type HistoryEvent = {
   new_state?: Record<string, unknown>;
   reason?: string;
   corrects_event?: string;
+  // The teacher DTO carries the internal note; the learner DTO omits it.
+  internal_note?: string;
 };

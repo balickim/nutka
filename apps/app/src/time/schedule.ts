@@ -76,3 +76,12 @@ export function futureExceptionDraft(now = new Date(), durationMinutes = 45): { 
   const startMs = Math.ceil((now.getTime() + 86400000) / 900000) * 900000;
   return { start: utcToLocalInput(formatUtcInstant(new Date(startMs))), end: utcToLocalInput(formatUtcInstant(new Date(startMs + durationMinutes * 60000))) };
 }
+
+export function formatWeeklySlot(value: string, timezone?: string): string {
+  return localizeUtcInstant(value, "pl-PL", { weekday: "long", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...(timezone ? { timeZone: timezone } : {}) });
+}
+
+export function isSameLocalDay(value: string, reference: Date, timezone?: string): boolean {
+  const format = (date: Date) => new Intl.DateTimeFormat("en-CA", { ...(timezone ? { timeZone: timezone } : {}), year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  return format(parseUtcInstant(value)) === format(reference);
+}

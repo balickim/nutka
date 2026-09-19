@@ -4,7 +4,9 @@ import { useState, type FormEvent } from "react";
 
 import { commitAvailability, previewAvailability } from "../../api/commercial";
 import type { AvailabilityConflictResolution, AvailabilityPreview, AvailabilityProposal, CalendarResponse, Policy } from "../../api/contracts";
-import { ApiFeedback, EmptyState, LessonList } from "../../components/ScheduleBits";
+import { ApiFeedback } from "../../components/ApiFeedback";
+import { EmptyState } from "../../components/EmptyState";
+import { LessonList } from "../../components/ScheduleBits";
 import { useAvailabilityCommitMutation } from "../../query/commercial";
 import { futureExceptionDraft, localInputToUtc, weekdayLabels } from "../../time/schedule";
 
@@ -36,14 +38,32 @@ export function AvailabilityWorkspace({ data, policy, timezone }: { data: Calend
     <AvailabilityLessons data={data} policy={policy} />
   </>;
 }
-
 function RulePanel({ data, policy, timezone, onPreview, error }: { data: CalendarResponse; policy: Policy; timezone: string; onPreview: (value: AvailabilityProposal) => Promise<void>; error: unknown }) {
   return <section className="panel-section"><div className="section-heading"><div><p className="eyebrow">nutka / dostępność</p><h2>Tygodniowy plan</h2></div><span className="timezone-badge">{timezone}</span></div><p className="supporting-copy">Każda zmiana najpierw pokazuje skutki. W najbliższych {policy.booking_horizon_days} dniach musisz rozwiązać każdą kolizję.</p><ApiFeedback error={error} /><RuleCreate policy={policy} onPreview={(value) => void onPreview(value)} /><RuleList rules={data.availability_rules} onPreview={onPreview} /></section>;
 }
 
 function RuleList({ rules, onPreview }: { rules: CalendarResponse["availability_rules"]; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
+  const [editing, setEditing] = useState<string | null>(null);
   if (!rules.length) return <EmptyState>Brak reguł. Tydzień jest domyślnie niedostępny.</EmptyState>;
-  return <div className="rule-list">{rules.map((rule) => <article className="rule-row" key={rule.id}><div><strong>{weekdayLabels[rule.weekday]}</strong><span>{rule.start_time}–{rule.end_time} · {rule.enabled ? "włączona" : "wyłączona"}</span></div><div className="row-actions"><button className="text-button" onClick={() => void onPreview({ operation: rule.enabled ? "disable" : "enable", target: "recurring_rule", id: rule.id })}>{rule.enabled ? "Wyłącz" : "Włącz"}</button><button className="text-button" onClick={() => void onPreview(editRule(rule))}>Edytuj</button><button className="text-button danger-button" onClick={() => void onPreview({ operation: "delete", target: "recurring_rule", id: rule.id })}>Usuń</button></div></article>)}</div>;
+  return <div className="rule-list">{rules.map((rule) => <article className="rule-row" key={rule.id}>
+    <div><strong>{weekdayLabels[rule.weekday]}</strong><span>{rule.start_time}–{rule.end_time} · {rule.enabled ? "włączona" : "wyłączona"}</span></div>
+    {editing === rule.id
+      ? <RuleEdit rule={rule} onCancel={() => setEditing(null)} onSubmit={(value) => { setEditing(null); void onPreview(value); }} />
+      : <div className="row-actions"><button className="text-button" onClick={() => void onPreview({ operation: rule.enabled ? "disable" : "enable", target: "recurring_rule", id: rule.id })}>{rule.enabled ? "Wyłącz" : "Włącz"}</button><button className="text-button" onClick={() => setEditing(rule.id)}>Edytuj</button><button className="text-button danger-button" onClick={() => void onPreview({ operation: "delete", target: "recurring_rule", id: rule.id })}>Usuń</button></div>}
+  </article>)}</div>;
+}
+
+function RuleEdit({ rule, onCancel, onSubmit }: { rule: CalendarResponse["availability_rules"][number]; onCancel: () => void; onSubmit: (value: AvailabilityProposal) => void }) {
+  const [start, setStart] = useState(rule.start_time);
+  const [end, setEnd] = useState(rule.end_time);
+  return <div className="exception-edit">
+    <label htmlFor={`rule-start-${rule.id}`}>Od</label>
+    <input id={`rule-start-${rule.id}`} type="time" value={start} onChange={(event) => setStart(event.target.value)} />
+    <label htmlFor={`rule-end-${rule.id}`}>Do</label>
+    <input id={`rule-end-${rule.id}`} type="time" value={end} onChange={(event) => setEnd(event.target.value)} />
+    <button className="secondary-button" onClick={() => onSubmit({ operation: "update", target: "recurring_rule", id: rule.id, rule: { start_time: start, end_time: end } })}>Sprawdź zmianę</button>
+    <button className="text-button" onClick={onCancel}>Anuluj</button>
+  </div>;
 }
 
 function ExceptionPanel({ data, policy, onPreview }: { data: CalendarResponse; policy: Policy; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
@@ -51,8 +71,24 @@ function ExceptionPanel({ data, policy, onPreview }: { data: CalendarResponse; p
 }
 
 function ExceptionList({ values, onPreview }: { values: CalendarResponse["availability_exceptions"]; onPreview: (value: AvailabilityProposal) => Promise<void> }) {
+  const [editing, setEditing] = useState<string | null>(null);
   if (!values.length) return <EmptyState>Brak wyjątków.</EmptyState>;
-  return <div className="exception-list">{values.map((item) => <article className="exception-row" key={item.id}><div><strong>{item.kind === "available" ? "Dostępny" : "Niedostępny"}</strong><p>{item.start_at}–{item.end_at} · {item.enabled ? "włączony" : "wyłączony"}{item.note ? ` · ${item.note}` : ""}</p></div><div className="row-actions"><button className="text-button" onClick={() => void onPreview({ operation: item.enabled ? "disable" : "enable", target: "exception", id: item.id })}>{item.enabled ? "Wyłącz" : "Włącz"}</button><button className="text-button" onClick={() => void onPreview(editException(item))}>Edytuj</button><button className="text-button danger-button" onClick={() => void onPreview({ operation: "delete", target: "exception", id: item.id })}>Usuń</button></div></article>)}</div>;
+  return <div className="exception-list">{values.map((item) => <article className="exception-row" key={item.id}>
+    <div><strong>{item.kind === "available" ? "Dostępny" : "Niedostępny"}</strong><p>{item.start_at}–{item.end_at} · {item.enabled ? "włączony" : "wyłączony"}{item.note ? ` · ${item.note}` : ""}</p></div>
+    {editing === item.id
+      ? <ExceptionEdit item={item} onCancel={() => setEditing(null)} onSubmit={(value) => { setEditing(null); void onPreview(value); }} />
+      : <div className="row-actions"><button className="text-button" onClick={() => void onPreview({ operation: item.enabled ? "disable" : "enable", target: "exception", id: item.id })}>{item.enabled ? "Wyłącz" : "Włącz"}</button><button className="text-button" onClick={() => setEditing(item.id)}>Edytuj</button><button className="text-button danger-button" onClick={() => void onPreview({ operation: "delete", target: "exception", id: item.id })}>Usuń</button></div>}
+  </article>)}</div>;
+}
+
+function ExceptionEdit({ item, onCancel, onSubmit }: { item: CalendarResponse["availability_exceptions"][number]; onCancel: () => void; onSubmit: (value: AvailabilityProposal) => void }) {
+  const [note, setNote] = useState(item.note || "");
+  return <div className="exception-edit">
+    <label htmlFor={`note-${item.id}`}>Notatka</label>
+    <input id={`note-${item.id}`} value={note} onChange={(event) => setNote(event.target.value)} />
+    <button className="secondary-button" onClick={() => onSubmit({ operation: "update", target: "exception", id: item.id, exception: { note } })}>Sprawdź zmianę</button>
+    <button className="text-button" onClick={onCancel}>Anuluj</button>
+  </div>;
 }
 
 function AvailabilityLessons({ data, policy }: { data: CalendarResponse; policy: Policy }) {
@@ -83,16 +119,4 @@ function PreviewPanel({ preview, resolutions, onResolution, onSave, onClose, bus
 
 function complete(preview: AvailabilityPreview, values: Record<string, AvailabilityConflictResolution>): boolean {
   return preview.near_term_conflicts.every((item) => values[item.lesson] && (values[item.lesson].action === "cancel" || Boolean(values[item.lesson].replacement_start_at)));
-}
-
-function editRule(rule: CalendarResponse["availability_rules"][number]): AvailabilityProposal {
-  const start = window.prompt("Godzina początku", rule.start_time);
-  const end = window.prompt("Godzina końca", rule.end_time);
-  if (!start || !end) return { operation: "update", target: "recurring_rule", id: rule.id, rule: {} };
-  return { operation: "update", target: "recurring_rule", id: rule.id, rule: { start_time: start, end_time: end } };
-}
-
-function editException(item: CalendarResponse["availability_exceptions"][number]): AvailabilityProposal {
-  const note = window.prompt("Notatka", item.note || "");
-  return { operation: "update", target: "exception", id: item.id, exception: { note: note ?? item.note } };
 }

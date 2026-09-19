@@ -29,6 +29,19 @@ export const queryKeys = {
     accountId: string,
     assignmentId: string,
   ) => [root, role, "assignment-summary", accountId, assignmentId] as const,
+  // Packages and contracts stay under the summary prefix so one assignment rule invalidates every commercial read of that assignment.
+  assignmentPackages: (
+    role: PersonaRole,
+    accountId: string,
+    assignmentId: string,
+  ) =>
+    [root, role, "assignment-summary", accountId, assignmentId, "packages"] as const,
+  assignmentContracts: (
+    role: PersonaRole,
+    accountId: string,
+    assignmentId: string,
+  ) =>
+    [root, role, "assignment-summary", accountId, assignmentId, "contracts"] as const,
   contractSeriesRoot: (role: PersonaRole) =>
     [root, role, "contract-series"] as const,
   contractSeries: (
@@ -36,6 +49,12 @@ export const queryKeys = {
     assignmentId: string,
     contractId: string,
   ) => [root, role, "contract-series", assignmentId, contractId] as const,
+  contractMonths: (
+    role: PersonaRole,
+    assignmentId: string,
+    contractId: string,
+  ) =>
+    [root, role, "contract-series", assignmentId, contractId, "months"] as const,
   financialWorkRoot: (role: PersonaRole) =>
     [root, role, "financial-work"] as const,
   financialWork: (role: PersonaRole, accountId: string, assignmentId = "all") =>

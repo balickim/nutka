@@ -9,7 +9,13 @@ import type { CommercialSummary, HistoryEvent, Policy } from "../api/contracts";
 import { assignmentDisplayName, type Assignment, type CalendarResponse, type Slot } from "../api/scheduling";
 import { authCopy } from "../auth/copy";
 import { authenticatedRecord, personaDisplayName, usePersonaLogout, usePersonaSession } from "../auth/session";
-import { ApiFeedback, EmptyState, LessonList } from "../components/ScheduleBits";
+import { ApiFeedback } from "../components/ApiFeedback";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { EmptyState } from "../components/EmptyState";
+import { Skeleton } from "../components/Skeleton";
+import { useToast } from "../components/Toast";
+import { formatMoney } from "../money";
+import { LessonList } from "../components/ScheduleBits";
 import { businessPolicyQuery, commercialSummaryQuery, historyQuery, useBookingMutation, usePlanMutation } from "../query/commercial";
 import { learnerCalendarQuery, useLearnerSlots } from "../query/scheduling";
 import { router } from "../router";
@@ -31,7 +37,7 @@ export function HomeView() {
   const frame = (children: React.ReactNode) => <PanelFrame title={`Cześć, ${personaDisplayName(record)}.`} onLogout={() => void handleLogout()}>{children}</PanelFrame>;
   const panelError = [calendar.error, policy.error, slots.error].find(Boolean);
   if (panelError) return frame(<ApiFeedback error={panelError} onRetry={() => { void calendar.refetch(); void policy.refetch(); slots.refetch(); }} />);
-  if (!calendar.data || !policy.data || slots.pending) return frame(<p className="loading-state" role="status">Ładowanie kalendarza…</p>);
+  if (!calendar.data || !policy.data || slots.pending) return frame(<Skeleton lines={5} label="Ładowanie kalendarza…" />);
   return frame(<LearnerDashboard accountId={record.id} calendar={calendar.data} assignments={assignments} slots={slots} policy={policy.data} />);
 }
 
@@ -54,30 +60,37 @@ function LearnerAssignmentCard({ accountId, assignment, slots, policy }: { accou
   const history = useQuery(historyQuery("learner", accountId, assignment.id));
   const booking = useBookingMutation();
   const plan = usePlanMutation();
+  const { notify } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const contract = summary.data?.contract;
   async function book(slot: Slot) {
     setBusy(slot.start_at);
-    try { await booking.mutateAsync({ assignmentId: assignment.id, write: () => bookFlexibleLesson("learner", assignment.id, { start_at: slot.start_at }) }); }
-    finally { setBusy(null); }
+    try {
+      await booking.mutateAsync({ assignmentId: assignment.id, write: () => bookFlexibleLesson("learner", assignment.id, { start_at: slot.start_at }) });
+      notify(`Zarezerwowano lekcję ${formatScheduleInstant(slot.start_at)}.`);
+    } finally { setBusy(null); }
   }
   async function notice() {
-    const contract = summary.data?.contract;
-    if (!contract || !window.confirm("Wypowiedzenie zakończy plan z końcem następnego miesiąca. Kontynuować?")) return;
+    if (!contract) return;
     await plan.mutateAsync({ assignmentId: assignment.id, write: () => submitContractNotice("learner", contract.id) });
+    notify("Wypowiedzenie złożone.");
+    setNoticeOpen(false);
   }
   return <article className="assignment-card">
     <div className="assignment-heading"><div><p className="eyebrow">Nauczyciel</p><h3>{assignmentDisplayName(assignment, "learner")}</h3></div><span className="duration-badge">{policy.lesson_duration_minutes} min</span></div>
     <ApiFeedback error={summary.error || history.error || booking.error || plan.error} />
-    <CommercialSummaryPanel details={summary.data} onNotice={() => void notice()} />
+    <CommercialSummaryPanel details={summary.data} pending={summary.isPending} onNotice={() => setNoticeOpen(true)} />
+    <ConfirmDialog open={noticeOpen} title="Wypowiedzenie umowy" consequence={contract ? `Umowa zakończy się ${formatScheduleDate(`${contract.end_on}T12:00:00Z`)}. Lekcje po tej dacie znikną z kalendarza.` : ""} confirmLabel="Złóż wypowiedzenie" danger busy={plan.isPending} onConfirm={() => void notice()} onCancel={() => setNoticeOpen(false)} />
     <BookingPanel regular={summary.data?.active_plan === "regular_contract"} slots={slots} busy={busy} policy={policy} onBook={(slot) => void book(slot)} />
     <LearnerHistory items={history.data?.items ?? []} />
     <TokenDetails details={summary.data} />
   </article>;
 }
 
-function CommercialSummaryPanel({ details, onNotice }: { details?: CommercialSummary; onNotice: () => void }) {
-  if (!details) return <p className="loading-state">Ładowanie planu…</p>;
-  return <div className="commercial-summary"><strong>{details.active_plan ? planCopy[details.active_plan] : "Brak aktywnego planu"}</strong>{details.package ? <p>Pakiet ważny do {details.package.valid_through}. Dostępne tokeny: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}{details.contract ? <p>Umowa: {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {(details.contract.price_minor / 100).toFixed(2)} {details.contract.currency} za lekcję. Zmiany w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}<p>Oczekujące płatności: {details.payments.pending}. Nieopłacone: {details.payments.intentionally_unpaid}. Kredyt: {(details.payments.credit_minor / 100).toFixed(2)} {details.payments.currency}.</p>{details.contract ? <button className="text-button danger-button" onClick={onNotice}>Złóż wypowiedzenie</button> : null}</div>;
+function CommercialSummaryPanel({ details, pending, onNotice }: { details?: CommercialSummary; pending: boolean; onNotice: () => void }) {
+  if (pending || !details) return <Skeleton lines={3} label="Ładowanie planu…" />;
+  return <div className="commercial-summary"><strong>{details.active_plan ? planCopy[details.active_plan] : "Brak aktywnego planu"}</strong>{details.package ? <p>Pakiet ważny do {details.package.valid_through}. Dostępne tokeny: {details.package.token_balance.available}, zarezerwowane: {details.package.token_balance.reserved}.</p> : null}{details.contract ? <p>Umowa: {details.contract.start_on}–{details.contract.end_on}. Stan: {contractStatusCopy[details.contract.status]}. Cena: {formatMoney(details.contract.price_minor, details.contract.currency)} za lekcję. Zmiany w miesiącu: {details.contract.remaining_monthly_reschedules}. Bezpłatne odwołania: {details.contract.remaining_free_cancellations}.</p> : null}<p>Oczekujące płatności: {details.payments.pending}. Nieopłacone: {details.payments.intentionally_unpaid}. Kredyt: {formatMoney(details.payments.credit_minor, details.payments.currency)}.</p>{details.contract ? <button className="text-button danger-button" onClick={onNotice}>Złóż wypowiedzenie</button> : null}</div>;
 }
 
 function BookingPanel({ regular, slots, busy, policy, onBook }: { regular: boolean; slots: Slot[]; busy: string | null; policy: Policy; onBook: (slot: Slot) => void }) {
@@ -109,5 +122,5 @@ function SessionUnavailable({ onRetry }: { onRetry: () => void }) {
 }
 
 function PanelFrame({ title, onLogout, children }: { title: string; onLogout: () => void; children: React.ReactNode }) {
-  return <main className="panel-shell"><header className="panel-header"><p className="wordmark">nutka</p><button className="text-button" onClick={onLogout}>{authCopy.logout}</button></header><section className="panel-hero"><h1>{title}</h1><p>Planuj lekcje z przypisanymi nauczycielami.</p></section>{children}</main>;
+  return <main className="panel-shell"><header className="panel-header"><div className="panel-identity"><p className="wordmark">nutka</p><h1>{title}</h1></div><button className="text-button" onClick={onLogout}>{authCopy.logout}</button></header><p className="panel-lede">Planuj lekcje z przypisanymi nauczycielami.</p>{children}</main>;
 }

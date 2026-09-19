@@ -125,9 +125,13 @@ test("teacher purchase, four package bookings, precedence, and ad hoc settlement
     return json(route, { code: "not_found", message: "Not found." }, 404);
   });
 
-  await teacherPage.goto("/teachers");
+  await teacherPage.goto("/teachers/students/assignment-1");
+  await teacherPage.getByRole("tab", { name: "Plan" }).click();
   await teacherPage.getByRole("button", { name: "Oznacz zakup pakietu" }).click();
+  await teacherPage.getByRole("button", { name: "Dalej" }).click();
+  await teacherPage.getByRole("button", { name: "Zapisz zakup" }).click();
   await expect(teacherPage.getByText("Dostępny", { exact: false }).first()).toBeVisible();
+  await teacherPage.goto("/teachers/billing");
   await teacherPage.getByRole("button", { name: "Zapisz rozliczenie" }).click();
 
   await installSession(learnerPage, "learner");
@@ -235,16 +239,21 @@ test("regular contract exposes series, learner horizon controls, forecast, notic
     return json(route, { code: "not_found", message: "Not found." }, 404);
   });
 
-  await teacherPage.goto("/teachers");
-  await teacherPage.getByLabel("Data początku").fill("2030-09-16");
+  await teacherPage.goto("/teachers/students/assignment-1");
+  await teacherPage.getByRole("tab", { name: "Plan" }).click();
   await teacherPage.getByRole("button", { name: "Aktywuj umowę" }).click();
-  await expect(teacherPage.getByText("Seria: najbliższe 1, dalsze 1")).toBeVisible();
+  await teacherPage.getByLabel("Data początku").fill("2030-09-16");
+  await teacherPage.getByRole("button", { name: "Dalej" }).click();
+  await expect(teacherPage.getByRole("dialog")).toContainText("50,00 PLN za lekcję");
+  await teacherPage.getByRole("dialog").getByRole("button", { name: "Aktywuj umowę" }).click();
+  await teacherPage.getByText("Seria lekcji").click();
+  await expect(teacherPage.getByText("W horyzoncie")).toBeVisible();
   await teacherPage.getByText("Prognozy i należności miesięczne").click();
-  await expect(teacherPage.getByText(/2030-09.*150\.00 PLN.*prognoza/)).toBeVisible();
+  await expect(teacherPage.getByText(/2030-09.*150,00 PLN.*prognoza/)).toBeVisible();
+  await teacherPage.goto("/teachers/billing");
   await teacherPage.getByRole("button", { name: "Zapisz płatność" }).click();
 
   await installSession(learnerPage, "learner");
-  learnerPage.on("dialog", (dialog) => dialog.accept());
   await learnerPage.route(apiRequestPattern, async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/health") return json(route, {});
@@ -281,8 +290,11 @@ test("regular contract exposes series, learner horizon controls, forecast, notic
   await learnerPage.getByRole("button", { name: "Przełóż" }).click();
   await learnerPage.getByLabel("Nowy termin").fill("2030-09-23T17:00");
   await learnerPage.getByRole("button", { name: "Zapisz termin" }).click();
+  await learnerPage.getByRole("dialog").getByRole("button", { name: "Przełóż lekcję" }).click();
   await learnerPage.getByRole("button", { name: "Odwołaj" }).click();
+  await learnerPage.getByRole("dialog").getByRole("button", { name: "Odwołaj lekcję" }).click();
   await learnerPage.getByRole("button", { name: "Złóż wypowiedzenie" }).click();
+  await learnerPage.getByRole("dialog").getByRole("button", { name: "Złóż wypowiedzenie" }).click();
   await expect(learnerPage.getByText(/Umowa: 2030-09-16–2030-10-31/)).toBeVisible();
   expect(mutations.find((item) => item.path.endsWith("/reschedule"))?.body).toEqual({ start_at: "2030-09-23T15:00:00.000Z" });
   expect(mutations.find((item) => item.path.endsWith("/notice"))?.body).toEqual({});

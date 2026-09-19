@@ -44,6 +44,13 @@ describe("query key registry", () => {
     expect(firstSlots).not.toEqual(secondSlots);
     expect(queryKeys.learnerSlots("learner-2", "assignment-1")).not.toEqual(firstSlots);
   });
+
+  it("nests package, contract, and month keys under the read they belong to", () => {
+    const summary = queryKeys.commercialSummary("teacher", "teacher-1", "assignment-1");
+    expect(queryKeys.assignmentPackages("teacher", "teacher-1", "assignment-1")).toEqual([...summary, "packages"]);
+    expect(queryKeys.assignmentContracts("teacher", "teacher-1", "assignment-1")).toEqual([...summary, "contracts"]);
+    expect(queryKeys.contractMonths("teacher", "assignment-1", "contract-1")).toEqual([...queryKeys.contractSeries("teacher", "assignment-1", "contract-1"), "months"]);
+  });
 });
 
 describe("mutation cache rules", () => {
@@ -52,6 +59,17 @@ describe("mutation cache rules", () => {
   it("refreshes both calendars and every learner slot after an availability write", async () => {
     await applyCacheEffect(client, queryRules.availabilityCommit());
     expect(staleKeys()).toEqual([teacherCalendar, learnerCalendar, firstSlots, secondSlots].map((key) => JSON.stringify(key)).sort());
+  });
+
+  it("refreshes the packages and contracts of the changed assignment after a plan write", async () => {
+    const packages = queryKeys.assignmentPackages("teacher", "teacher-1", "assignment-1");
+    const contracts = queryKeys.assignmentContracts("teacher", "teacher-1", "assignment-1");
+    const other = queryKeys.assignmentPackages("teacher", "teacher-1", "assignment-2");
+    [packages, contracts, other].forEach((key) => client.setQueryData(key, { seeded: true }));
+    await applyCacheEffect(client, queryRules.planWrite("assignment-1"));
+    expect(staleKeys()).toContain(JSON.stringify(packages));
+    expect(staleKeys()).toContain(JSON.stringify(contracts));
+    expect(staleKeys()).not.toContain(JSON.stringify(other));
   });
 
   it("refreshes both calendars and only the changed assignment after an assignment write", async () => {
