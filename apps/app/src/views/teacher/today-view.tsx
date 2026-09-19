@@ -9,6 +9,7 @@ import { Skeleton } from "../../components/skeleton";
 import { ApiFeedback } from "../../components/api-feedback";
 import { formatMoney } from "../../money";
 import { unresolvedWorkQuery } from "../../query/commercial";
+import { daySummariesQuery } from "../../query/practice";
 import { formatScheduleInstant, isSameLocalDay } from "../../time/schedule";
 import { TodayLessonCard } from "./today/today-lesson-card";
 import { uniqueCharges } from "./billing-view";
@@ -35,13 +36,20 @@ export function todayLessons(calendar: CalendarResponse, now = new Date()): Less
     .sort((left, right) => left.start_at.localeCompare(right.start_at));
 }
 
+// One request returns the practice summaries of every lesson today. A failed read only hides the summaries.
 function TodayLessons({ accountId, lessons, names, policy }: { accountId: string; lessons: Lesson[]; names: ReadonlyMap<string, string>; policy: Policy }) {
+  const practice = useQuery({ ...daySummariesQuery(accountId, localDate()), enabled: lessons.length > 0 });
+  const summaries = new Map(practice.data?.items.map((item) => [item.lesson, item.summary]));
   return <section className="panel-section">
     <h2>Dzisiejsze lekcje</h2>
     {lessons.length === 0
       ? <EmptyState action={<Link className="btn btn-ghost btn-sm" to="/teachers/calendar">Otwórz kalendarz</Link>}>Dziś nie masz lekcji.</EmptyState>
-      : <div className="lesson-list">{lessons.map((lesson) => <TodayLessonCard key={lesson.id} accountId={accountId} lesson={lesson} learner={names.get(lesson.assignment)} policy={policy} />)}</div>}
+      : <div className="lesson-list">{lessons.map((lesson) => <TodayLessonCard key={lesson.id} accountId={accountId} lesson={lesson} learner={names.get(lesson.assignment)} policy={policy} practice={summaries.get(lesson.id)} />)}</div>}
   </section>;
+}
+
+function localDate(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
 function DecisionQueue({ accountId, names }: { accountId: string; names: ReadonlyMap<string, string> }) {

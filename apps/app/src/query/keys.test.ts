@@ -107,6 +107,14 @@ describe("mutation cache rules", () => {
     }
   });
 
+  it("refreshes practice reads of only the changed assignment and every teacher day summary after a practice write", async () => {
+    const changed = [queryKeys.practiceTasks("teacher", "teacher-1", "assignment-1", "active"), queryKeys.practiceSessions("learner", "learner-1", "assignment-1", 1), queryKeys.practiceSummary("learner", "learner-1", "assignment-1"), queryKeys.practiceDay("teacher-1", "2030-01-02")];
+    const other = queryKeys.practiceSummary("learner", "learner-1", "assignment-2");
+    [...changed, other].forEach((key) => client.setQueryData(key, { seeded: true }));
+    await applyCacheEffect(client, queryRules.practiceWrite("assignment-1"));
+    expect(staleKeys()).toEqual(changed.map((key) => JSON.stringify(key)).sort());
+  });
+
   it("refreshes teacher and learner notes of only the changed assignment after a note write", async () => {
     const teacherNotes = queryKeys.lessonNotes("teacher", "teacher-1", "assignment-1");
     const learnerNotes = queryKeys.lessonNotes("learner", "learner-1", "assignment-1");

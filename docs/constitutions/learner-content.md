@@ -2,7 +2,7 @@
 
 This document defines the rules that every assignment-scoped learner content type follows.
 Learner content is teaching content that a teacher and a learner share inside one assignment.
-The [learner materials API](../api/materials.md), the [lesson notes API](../api/lesson-notes.md), and the [repertoire API](../api/repertoire.md) define the current learner content types.
+The [learner materials API](../api/materials.md), the [lesson notes API](../api/lesson-notes.md), the [repertoire API](../api/repertoire.md), and the [practice API](../api/practice.md) define the current learner content types.
 
 ## Scope
 
@@ -19,6 +19,7 @@ The [learner materials API](../api/materials.md), the [lesson notes API](../api/
 - Only superusers can use the native record and file routes of the collection.
 - File fields are protected. The persona file routes stream the files.
 - The collection stores datetimes as UTC instants.
+- A value that names a local day, such as a practice day, is a `YYYY-MM-DD` date in the teacher timezone.
 
 ## Routes
 
@@ -37,5 +38,6 @@ The [learner materials API](../api/materials.md), the [lesson notes API](../api/
 
 ## Presentation
 
+- The learner panel shows no points, streaks, badges, or rankings for practice.
 - A client reads the local day and week of learner content in the teacher timezone.
 - The learner panel shows learner content on the learner screen that owns the content type.

@@ -9,6 +9,7 @@ import { formatScheduleInstant } from "../../time/schedule";
 import { LearnerShell, type LearnerContext } from "./learner-shell";
 import { LatestNote } from "./lessons/lesson-notes";
 import { PaymentCard } from "./payments/payment-card";
+import { PracticeCard } from "./practice/practice-card";
 
 export function StartView() {
   return <LearnerShell lede="Najbliższa lekcja i to, co warto zrobić przed nią.">{(context) => <Start context={context} />}</LearnerShell>;
@@ -25,6 +26,7 @@ function Start({ context }: { context: LearnerContext }) {
         ? <div className="next-lesson"><p className="next-lesson-time">{formatScheduleInstant(next.start_at)}</p><p className="supporting-copy">{policy.lesson_duration_minutes} minut · nauczyciel: {assignmentDisplayName(assignment, "learner")}</p><Link className="btn btn-ghost btn-sm" to="/learners/lessons" search={search}>Przełóż lub odwołaj</Link></div>
         : <EmptyState action={<Link className="btn btn-primary btn-sm" to="/learners/lessons" search={search}>Zarezerwuj lekcję</Link>}>Nie masz zaplanowanej lekcji.</EmptyState>}
     </section>
+    <PracticeCard accountId={context.accountId} assignmentId={assignment.id} />
     <LatestNote accountId={context.accountId} assignmentId={assignment.id} />
     <PaymentCard accountId={context.accountId} assignmentId={assignment.id} />
     <section className="panel-section">

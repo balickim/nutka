@@ -16,6 +16,7 @@ import { LoginView } from "./views/login-view";
 import { LessonsView } from "./views/learner/lessons-view";
 import { PaymentsView } from "./views/learner/payments-view";
 import { PiecesView } from "./views/learner/pieces-view";
+import { PracticeView } from "./views/learner/practice-view";
 import { StartView } from "./views/learner/start-view";
 import { PersonaEntryView } from "./views/persona-entry-view";
 import { BillingView } from "./views/teacher/billing-view";
@@ -78,6 +79,13 @@ const learnerPiecesRoute = createRoute({
   validateSearch: learnerSearch,
   beforeLoad: ({ location }) => requirePersona("learner", location.href),
   component: PiecesView,
+});
+const learnerPracticeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/learners/practice",
+  validateSearch: learnerSearch,
+  beforeLoad: ({ location }) => requirePersona("learner", location.href),
+  component: PracticeView,
 });
 const learnerPaymentsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -148,6 +156,7 @@ const routeTree = rootRoute.addChildren([
   learnerStartRoute,
   learnerLessonsRoute,
   learnerPiecesRoute,
+  learnerPracticeRoute,
   learnerPaymentsRoute,
   learnerCalendarRoute,
   teacherLoginRoute,

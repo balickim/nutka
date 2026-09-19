@@ -1,6 +1,6 @@
 # Nutka documentation
 
-This directory contains the contracts for Nutka authentication, scheduling, commercial lesson plans, learner materials, lesson notes, and repertoire.
+This directory contains the contracts for Nutka authentication, scheduling, commercial lesson plans, learner materials, lesson notes, repertoire, and practice.
 
 ## Contract order
 
@@ -32,6 +32,7 @@ This directory contains the contracts for Nutka authentication, scheduling, comm
 - [Learner materials API](api/materials.md) defines teacher-authored text, image, and PDF materials.
 - [Lesson notes API](api/lesson-notes.md) defines one teacher note for each lesson.
 - [Repertoire API](api/repertoire.md) defines the pieces of a learner, learner wishes, and arrangement versions.
+- [Practice API](api/practice.md) defines practice tasks, learner practice sessions, and practice summaries.
 - [Scheduling errors](api/errors.md) defines shared status and error codes.
 
 ## Change workflow
