@@ -118,6 +118,7 @@ export const errorCopy: Record<string, string> = {
   unauthorized: "Nie masz dostępu do tej operacji.",
   missing_intent: "Nie udało się potwierdzić tej operacji. Spróbuj ponownie.",
   invalid_request: "Sprawdź wprowadzone dane.",
+  invalid_material: "Materiał wymaga tytułu oraz treści lub załącznika. Załączniki to zdjęcia lub PDF do 10 MB.",
   invalid_duration: "Lekcja musi mieć czas trwania określony przez bieżące zasady.",
   invalid_grid: "Wybierz termin zgodny z bieżącą siatką godzin.",
   conflict: "Wybrany termin koliduje z inną lekcją.",

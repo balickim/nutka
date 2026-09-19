@@ -62,6 +62,9 @@ export const queryKeys = {
   historyRoot: (role: PersonaRole) => [root, role, "history"] as const,
   history: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "history", accountId, assignmentId] as const,
+  materialsRoot: (role: PersonaRole) => [root, role, "materials"] as const,
+  materials: (role: PersonaRole, accountId: string, assignmentId: string) =>
+    [root, role, "materials", accountId, assignmentId] as const,
   unresolvedWork: (role: "teacher", accountId: string) =>
     [root, role, "unresolved-work", accountId] as const,
 };
@@ -166,6 +169,14 @@ export const queryRules = {
         ...lessonMutationEffects(assignmentId).invalidate,
         ...allContractSeries(),
       ],
+    }),
+  // A material write changes only the materials of one assignment, for both personas.
+  materialWrite: (assignmentId: string): CacheEffect =>
+    effect({
+      invalidate: (["teacher", "learner"] as PersonaRole[]).map((role) => ({
+        queryKey: queryKeys.materialsRoot(role),
+        predicate: (query) => query.queryKey[4] === assignmentId,
+      })),
     }),
   // Logout, expiry, cross-tab logout, a session 401, and account replacement all end the right to read that persona cache.
   // The session entry survives removal because its caller writes the replacing session value into it.

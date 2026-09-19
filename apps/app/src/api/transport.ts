@@ -1,4 +1,4 @@
-// Provides the only frontend Fetch API boundary: URL building, cookie credentials, mutation intent, JSON decoding, and typed errors.
+// Provides the only frontend Fetch API boundary: URL building, cookie credentials, mutation intent, JSON or multipart bodies, and typed errors.
 
 import { apiUrl } from "./url";
 
@@ -28,12 +28,14 @@ export function isRetryableFailure(error: unknown): boolean {
 
 function requestInit({ method = "GET", body, signal }: ApiRequestOptions): RequestInit {
   const mutation = method !== "GET";
+  // The browser sets the multipart boundary header for FormData bodies.
+  const multipart = body instanceof FormData;
   return {
     method,
     credentials: "include",
     signal,
-    headers: { ...(mutation ? intentHeader : {}), ...(body === undefined ? {} : jsonHeader) },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    headers: { ...(mutation ? intentHeader : {}), ...(body === undefined || multipart ? {} : jsonHeader) },
+    ...(body === undefined ? {} : { body: multipart ? body : JSON.stringify(body) }),
   };
 }
 

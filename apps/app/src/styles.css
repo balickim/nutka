@@ -213,3 +213,27 @@ a.assignment-row:hover { border-color: var(--accent); }
 
 a.secondary-button { display: inline-block; text-decoration: none; }
 a.assignment-row { align-items: center; display: flex; }
+
+.material-form { margin-bottom: var(--space-6); }
+.material-form .primary-button { justify-self: start; }
+.material-form h3 { margin: 0; }
+.material-list { display: grid; gap: var(--space-3); }
+.material-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--space-3); padding: var(--space-5); }
+.material-heading { align-items: flex-start; display: flex; gap: var(--space-4); justify-content: space-between; }
+.material-heading h3 { font-size: var(--text-md); margin: 0; }
+.material-body { line-height: 1.6; overflow-wrap: anywhere; }
+.material-body > :first-child { margin-top: 0; }
+.material-body > :last-child { margin-bottom: 0; }
+.material-body h3, .material-body h4 { font-size: var(--text-md); margin: var(--space-3) 0 var(--space-1); }
+.material-images { display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.material-images img { aspect-ratio: 4 / 3; background: var(--surface-sunken); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); display: block; object-fit: cover; width: 100%; }
+.material-files { display: grid; gap: var(--space-1); list-style: none; margin: 0; padding: 0; }
+.material-files a { color: var(--accent-strong); font-size: var(--text-sm); font-weight: 700; }
+.learner-materials { border-top: 1px solid var(--border); margin: var(--space-4) 0; padding-top: var(--space-4); }
+.learner-materials h4 { margin: 0 0 var(--space-3); }
+.rich-text { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
+.rich-text:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.rich-text-toolbar { border-bottom: 1px solid var(--border-soft); display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1); }
+.rich-text-toolbar button { background: transparent; border: 0; border-radius: var(--radius-sm); color: var(--text); font-size: var(--text-xs); font-weight: 700; padding: var(--space-1) var(--space-2); }
+.rich-text-toolbar button:hover { background: var(--surface-active); }
+.rich-text-area { min-height: 8rem; outline: 0; padding: var(--space-3); }

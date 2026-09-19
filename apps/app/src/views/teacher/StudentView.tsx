@@ -1,4 +1,4 @@
-// Presents one learner's commercial workspace, loading that learner's data only and refusing a foreign assignment.
+// Presents one learner's commercial workspace and materials, loading that learner's data only and refusing a foreign assignment.
 
 import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
@@ -7,6 +7,7 @@ import { assignmentDisplayName } from "../../api/scheduling";
 import type { Assignment, CalendarResponse, Lesson, Policy } from "../../api/contracts";
 import { EmptyState } from "../../components/EmptyState";
 import { HistoryTab } from "./student/HistoryTab";
+import { MaterialsTab } from "./student/MaterialsTab";
 import { OverviewTab } from "./student/OverviewTab";
 import { PlanTab } from "./student/PlanTab";
 import { TeacherShell } from "./TeacherShell";
@@ -14,6 +15,7 @@ import { TeacherShell } from "./TeacherShell";
 const tabs = [
   { id: "overview", label: "Przegląd" },
   { id: "plan", label: "Plan" },
+  { id: "materials", label: "Materiały" },
   { id: "history", label: "Historia" },
 ] as const;
 
@@ -21,7 +23,7 @@ type TabId = (typeof tabs)[number]["id"];
 
 export function StudentView() {
   const { assignmentId } = useParams({ from: "/teachers/students/$assignmentId" });
-  return <TeacherShell lede="Stan planu, rozliczeń i historii jednego ucznia.">
+  return <TeacherShell lede="Stan planu, rozliczeń, materiałów i historii jednego ucznia.">
     {(context) => {
       const assignment = context.calendar.assignments.find((item) => item.id === assignmentId);
       if (!assignment) return <NotYours />;
@@ -45,6 +47,7 @@ function Student({ accountId, assignment, policy, adHocLessons }: { accountId: s
     <div className="tab-bar" role="tablist">{tabs.map((item) => <button key={item.id} role="tab" type="button" aria-selected={tab === item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
     {tab === "overview" ? <OverviewTab accountId={accountId} assignment={assignment} /> : null}
     {tab === "plan" ? <PlanTab accountId={accountId} assignment={assignment} policy={policy} adHocLessons={adHocLessons} /> : null}
+    {tab === "materials" ? <MaterialsTab accountId={accountId} assignmentId={assignment.id} /> : null}
     {tab === "history" ? <HistoryTab accountId={accountId} assignmentId={assignment.id} /> : null}
   </section>;
 }
