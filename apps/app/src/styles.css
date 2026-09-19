@@ -210,8 +210,9 @@ details > summary:hover { color: var(--text); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.5s; } }
 
-.tab-bar { border-bottom: 1px solid var(--border); display: flex; gap: var(--space-2); margin: var(--space-6) 0 var(--space-6); overflow-x: auto; }
-.tab-bar button { background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--text-muted); font-size: var(--text-sm); font-weight: 600; margin-bottom: -1px; padding: var(--space-3) var(--space-3); white-space: nowrap; }
+/* The baseline is an inset shadow, so the active underline covers it without a negative margin that would overflow the scroll box. */
+.tab-bar { box-shadow: inset 0 -1px 0 var(--border); display: flex; gap: var(--space-2); margin: var(--space-6) 0 var(--space-6); overflow-x: auto; scrollbar-width: none; }
+.tab-bar button { background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--text-muted); font-size: var(--text-sm); font-weight: 600; padding: var(--space-3) var(--space-3); white-space: nowrap; }
 .tab-bar button:hover { color: var(--text); }
 .tab-bar button.active { border-bottom-color: var(--color-grass); color: var(--text); }
 
