@@ -24,6 +24,7 @@ It does not change any backend contract in `docs/api/`.
 
 - An action the panel cannot undo confirms through `ConfirmDialog`.
 - The availability impact review opens in `ConfirmDialog`. The teacher resolves each conflict inside the dialog before the save.
+- A learner slot choice opens `ConfirmDialog` with the date, duration, and teacher. The booking happens only after the learner confirms.
 - The dialog names the consequence with concrete dates or amounts.
 - The confirming control carries the action name and never reads as a generic acknowledgement.
 - The dialog traps focus, closes on the escape key, and returns focus to the control that opened it.

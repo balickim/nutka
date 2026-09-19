@@ -168,6 +168,9 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .history-list strong { color: var(--text); }
 details > summary { cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
 details > summary:hover { color: var(--text); }
+.booking-details { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
+.booking-details > summary { font-family: var(--font-display); font-size: var(--text-lg); letter-spacing: -.02em; list-style-position: inside; }
+.booking-details[open] > summary { margin-bottom: var(--space-2); }
 .check-label { align-items: flex-start; display: flex; gap: .55rem; }
 .check-label input { accent-color: var(--color-ink); margin-top: .2rem; min-height: 0; width: auto; }
 .resolution-row { border-top: 1px solid var(--border); margin-top: .8rem; padding-top: .8rem; }

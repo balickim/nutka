@@ -161,8 +161,10 @@ test("teacher purchase, four package bookings, precedence, and ad hoc settlement
   });
 
   await learnerPage.goto("/learners/calendar");
+  await learnerPage.locator("summary", { hasText: "Zarezerwuj lekcję" }).click();
   for (let expected = 1; expected <= 5; expected++) {
     await learnerPage.locator("button.slot-button").first().click();
+    await learnerPage.getByRole("dialog").getByRole("button", { name: "Zarezerwuj lekcję" }).click();
     await expect(learnerPage.locator("article.lesson-card")).toHaveCount(expected);
   }
   await expect(learnerPage.locator("article.lesson-card").filter({ hasText: "Pakiet lekcji" })).toHaveCount(4);

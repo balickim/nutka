@@ -15,7 +15,7 @@ describe("lesson change previews", () => {
 
   it("explains late package token use and blocks late reschedule copy", () => {
     const lesson = { ...base, plan_type: "package" } as Lesson;
-    expect(lessonChangeNotice("cancel", lesson, "learner", policy, undefined, now + 1)).toContain("token zostanie wykorzystany");
+    expect(lessonChangeNotice("cancel", lesson, "learner", policy, undefined, now + 1)).toContain("Lekcja z pakietu przepadnie");
     expect(lessonChangeNotice("reschedule", lesson, "learner", policy, undefined, now + 1)).toContain("można tylko odwołać");
   });
 
