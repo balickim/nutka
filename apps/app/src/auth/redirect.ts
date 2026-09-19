@@ -4,6 +4,8 @@ const fallbackRedirect = "/";
 
 export type RedirectPersona = "learner" | "teacher";
 
+export const personaHome: Record<RedirectPersona, string> = { teacher: "/teachers", learner: "/learners" };
+
 export function getSafeRedirect(rawRedirect: string | null | undefined, fallback = fallbackRedirect): string {
   if (!rawRedirect || !rawRedirect.startsWith("/") || rawRedirect.startsWith("//")) {
     return fallback;
@@ -28,8 +30,8 @@ export function getPersonaRedirect(
   rawRedirect: string | null | undefined,
   persona: RedirectPersona,
 ): string {
-  const root = persona === "learner" ? "/learners" : "/teachers";
-  const fallback = persona === "learner" ? "/learners/calendar" : "/teachers";
+  const root = personaHome[persona];
+  const fallback = personaHome[persona];
   const candidate = getSafeRedirect(rawRedirect, fallback);
   try {
     const pathname = new URL(candidate, "http://nutka.local").pathname;

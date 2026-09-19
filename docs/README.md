@@ -15,7 +15,8 @@ This directory contains the contracts for Nutka authentication, scheduling, comm
 - [Authentication contract](auth.md) defines the teacher and learner realms.
 - [Scheduling constitution](constitutions/scheduling.md) defines scheduling rules.
 - [Frontend query state constitution](constitutions/frontend-query-state.md) defines frontend server-state ownership.
-- [Frontend view state constitution](constitutions/frontend-view-states.md) defines data states, write feedback, dialogs, and teacher action tiers.
+- [Frontend view state constitution](constitutions/frontend-view-states.md) defines data states, write feedback, dialogs, teacher action tiers, and learner navigation.
+- [Learner content constitution](constitutions/learner-content.md) defines scope, storage, and routes of assignment-scoped learner content.
 - [Commercial policy decision](adr/0001-commercial-policy-and-history.md) records backend policy authority and immutable history.
 - [Assignments API](api/assignments.md) defines assignment reads and teacher updates.
 - [Availability API](api/availability.md) defines recurring rules and exceptions.

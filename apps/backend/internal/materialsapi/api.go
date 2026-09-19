@@ -1,5 +1,5 @@
 // Package materialsapi serves teacher-authored learner materials through persona routes.
-// Teachers add and delete materials of their assignments, learners read their own, and both stream protected files.
+// Teachers add and delete materials of their assignments, learners read their own, and both stream protected files. Persona checks live in personaroute.
 package materialsapi
 
 import (
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/balickim/nutka/apps/backend/internal/materials"
+	"github.com/balickim/nutka/apps/backend/internal/personaroute"
 	"github.com/pocketbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
 	"github.com/pocketbase/pocketbase"
@@ -38,22 +39,22 @@ type materialDTO struct {
 func RegisterRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		r := e.Router
-		r.GET("/api/teachers/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, teacherRole) })
-		r.GET("/api/learners/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, learnerRole) })
+		r.GET("/api/teachers/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, personaroute.Teacher) })
+		r.GET("/api/learners/assignments/{id}/materials", func(event *core.RequestEvent) error { return listMaterials(event, personaroute.Learner) })
 		r.POST("/api/teachers/assignments/{id}/materials", createMaterial).Bind(apis.BodyLimit(materials.MaxRequestBytes))
 		r.DELETE("/api/teachers/materials/{id}", deleteMaterial)
-		r.GET("/api/teachers/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, teacherRole) })
-		r.GET("/api/learners/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, learnerRole) })
+		r.GET("/api/teachers/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, personaroute.Teacher) })
+		r.GET("/api/learners/materials/{id}/files/{name}", func(event *core.RequestEvent) error { return serveFile(event, personaroute.Learner) })
 		return e.Next()
 	})
 }
 
-func listMaterials(e *core.RequestEvent, who role) error {
-	account, err := authenticatedCaller(e, who)
+func listMaterials(e *core.RequestEvent, who personaroute.Role) error {
+	account, err := personaroute.Caller(e, who)
 	if err != nil {
 		return respondError(e, err)
 	}
-	assignment, err := ownedAssignment(e.App, e.Request.PathValue("id"), who, account.Id)
+	assignment, err := personaroute.OwnedAssignment(e.App, e.Request.PathValue("id"), who, account.Id)
 	if err != nil {
 		return respondError(e, err)
 	}
@@ -69,14 +70,14 @@ func listMaterials(e *core.RequestEvent, who role) error {
 }
 
 func createMaterial(e *core.RequestEvent) error {
-	if err := requireIntent(e); err != nil {
+	if err := personaroute.RequireIntent(e); err != nil {
 		return respondError(e, err)
 	}
-	teacher, err := authenticatedCaller(e, teacherRole)
+	teacher, err := personaroute.Caller(e, personaroute.Teacher)
 	if err != nil {
 		return respondError(e, err)
 	}
-	assignment, err := ownedAssignment(e.App, e.Request.PathValue("id"), teacherRole, teacher.Id)
+	assignment, err := personaroute.OwnedAssignment(e.App, e.Request.PathValue("id"), personaroute.Teacher, teacher.Id)
 	if err != nil {
 		return respondError(e, err)
 	}
@@ -87,7 +88,7 @@ func createMaterial(e *core.RequestEvent) error {
 	if err := e.App.Save(record); err != nil {
 		return respondError(e, saveError(err))
 	}
-	return e.JSON(http.StatusCreated, toDTO(record, teacherRole))
+	return e.JSON(http.StatusCreated, toDTO(record, personaroute.Teacher))
 }
 
 func newMaterial(e *core.RequestEvent, assignmentID string) (*core.Record, error) {
@@ -122,10 +123,10 @@ func saveError(err error) error {
 }
 
 func deleteMaterial(e *core.RequestEvent) error {
-	if err := requireIntent(e); err != nil {
+	if err := personaroute.RequireIntent(e); err != nil {
 		return respondError(e, err)
 	}
-	record, err := ownedMaterial(e, teacherRole)
+	record, err := ownedMaterial(e, personaroute.Teacher)
 	if err != nil {
 		return respondError(e, err)
 	}
@@ -135,7 +136,7 @@ func deleteMaterial(e *core.RequestEvent) error {
 	return e.NoContent(http.StatusNoContent)
 }
 
-func serveFile(e *core.RequestEvent, who role) error {
+func serveFile(e *core.RequestEvent, who personaroute.Role) error {
 	record, err := ownedMaterial(e, who)
 	if err != nil {
 		return respondError(e, err)
@@ -157,22 +158,22 @@ func serveFile(e *core.RequestEvent, who role) error {
 	return nil
 }
 
-func ownedMaterial(e *core.RequestEvent, who role) (*core.Record, error) {
-	account, err := authenticatedCaller(e, who)
+func ownedMaterial(e *core.RequestEvent, who personaroute.Role) (*core.Record, error) {
+	account, err := personaroute.Caller(e, who)
 	if err != nil {
 		return nil, err
 	}
 	record, err := e.App.FindRecordById(materials.CollectionName, e.Request.PathValue("id"))
 	if err != nil {
-		return nil, errForbidden
+		return nil, personaroute.ErrForbidden
 	}
-	if _, err := ownedAssignment(e.App, record.GetString(materials.AssignmentField), who, account.Id); err != nil {
+	if _, err := personaroute.OwnedAssignment(e.App, record.GetString(materials.AssignmentField), who, account.Id); err != nil {
 		return nil, err
 	}
 	return record, nil
 }
 
-func toDTO(record *core.Record, who role) materialDTO {
+func toDTO(record *core.Record, who personaroute.Role) materialDTO {
 	names := record.GetStringSlice(materials.AttachmentsField)
 	attachments := make([]attachmentDTO, 0, len(names))
 	for _, name := range names {
@@ -199,14 +200,16 @@ func attachmentKind(name string) string {
 	return "image"
 }
 
+var (
+	errNotFound = errors.New("material file is unavailable")
+	errInvalid  = errors.New("material is invalid")
+)
+
 func respondError(e *core.RequestEvent, err error) error {
+	if handled, writeErr := personaroute.WriteError(e, err); handled {
+		return writeErr
+	}
 	switch {
-	case errors.Is(err, errUnauthenticated):
-		return e.JSON(http.StatusUnauthorized, map[string]string{"code": "unauthenticated", "message": "Authentication is required."})
-	case errors.Is(err, errForbidden):
-		return e.JSON(http.StatusForbidden, map[string]string{"code": "unauthorized", "message": "The account is not allowed to access this resource."})
-	case errors.Is(err, errIntent):
-		return e.JSON(http.StatusForbidden, map[string]string{"code": "missing_intent", "message": "The mutation intent header is required."})
 	case errors.Is(err, errInvalid):
 		return e.JSON(http.StatusBadRequest, map[string]string{"code": "invalid_material", "message": "The material is invalid."})
 	case errors.Is(err, errNotFound), errors.Is(err, filesystem.ErrNotFound):

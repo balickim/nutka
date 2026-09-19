@@ -13,10 +13,17 @@ export function toMajorInput(minor: number): string {
   return (minor / MINOR_PER_MAJOR).toFixed(2);
 }
 
+// Polish copy names the złoty with its everyday symbol instead of the ISO code.
+const currencySymbols: Record<string, string> = { PLN: "zł" };
+
+export function currencySymbol(currency: string): string {
+  return currencySymbols[currency] ?? currency;
+}
+
 export function formatMoney(minor: number, currency: string): string {
   const negative = minor < 0;
   const absolute = Math.abs(minor);
   const units = Math.trunc(absolute / MINOR_PER_MAJOR);
   const fraction = String(absolute % MINOR_PER_MAJOR).padStart(2, "0");
-  return `${negative ? "-" : ""}${units},${fraction} ${currency}`;
+  return `${negative ? "-" : ""}${units},${fraction} ${currencySymbol(currency)}`;
 }

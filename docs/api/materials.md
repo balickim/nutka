@@ -3,6 +3,7 @@
 The learner materials API stores teacher-authored content for one assignment.
 A material contains a title, a rich-text body, and image or PDF attachments.
 Only the assigned teacher and the assigned learner can read a material.
+The [learner content constitution](../constitutions/learner-content.md) defines the shared scope, storage, and route rules.
 
 ## Storage
 

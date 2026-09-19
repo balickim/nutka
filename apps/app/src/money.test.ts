@@ -16,9 +16,9 @@ describe("money", () => {
   });
 
   it("formats zero, fractions, and negative credit", () => {
-    expect(formatMoney(0, "PLN")).toBe("0,00 PLN");
-    expect(formatMoney(5005, "PLN")).toBe("50,05 PLN");
-    expect(formatMoney(-2500, "PLN")).toBe("-25,00 PLN");
+    expect(formatMoney(0, "PLN")).toBe("0,00 zł");
+    expect(formatMoney(5005, "PLN")).toBe("50,05 zł");
+    expect(formatMoney(-2500, "PLN")).toBe("-25,00 zł");
   });
 
   it("round-trips through the input representation", () => {

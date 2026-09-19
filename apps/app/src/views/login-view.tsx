@@ -4,7 +4,7 @@ import { Formik } from "formik";
 import { useState } from "react";
 
 import { authCopy } from "../auth/copy";
-import { getPersonaRedirect } from "../auth/redirect";
+import { getPersonaRedirect, personaHome } from "../auth/redirect";
 import { classifyAuthError, usePersonaLogin } from "../auth/session";
 import { loginSchema } from "../auth/validation";
 import { router } from "../router";
@@ -16,7 +16,7 @@ export function LoginView({ realm = "learner" }: LoginViewProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const login = usePersonaLogin(realm);
   const isTeacher = realm === "teacher";
-  const fallback = isTeacher ? "/teachers" : "/learners/calendar";
+  const fallback = personaHome[realm];
   return (
     <main className="auth-shell">
       <section className="auth-intro">
