@@ -12,6 +12,7 @@
     "test:e2e": "playwright test --config=../../playwright.config.ts"
   },
   "dependencies": {
+    "@nutka/ui": "*",
     "@tanstack/react-query": "5.102.8",
     "@tanstack/react-router": "1.170.18",
     "@vitejs/plugin-react": "^6.0.5",

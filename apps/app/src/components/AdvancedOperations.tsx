@@ -2,7 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 
-export function AdvancedOperations({ label = "Operacje zaawansowane", children }: { label?: string; children: (reason: string) => ReactNode }) {
+export function AdvancedOperations({ label = "Więcej opcji", children }: { label?: string; children: (reason: string) => ReactNode }) {
   const [reason, setReason] = useState("");
   const id = useId();
   return <details className="advanced-operations">

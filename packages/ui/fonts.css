@@ -1,0 +1,4 @@
+/* Kroje self-hostowane. Oba mają zakres latin-ext, czyli komplet polskich znaków.
+   Podział na unicode-range sprawia, że dla polskiego pobierają się tylko pliki latin i latin-ext. */
+@import "@fontsource-variable/fraunces/wght.css";
+@import "@fontsource-variable/inter/wght.css";

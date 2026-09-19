@@ -11,11 +11,7 @@ const contactUrl = sitePath("/#kontakt");
 
 <header class="sticky top-0 z-40 border-b border-line/60 bg-cream/85 backdrop-blur-md">
   <div class="container-x flex items-center justify-between gap-6 py-3">
-    <a href={homeUrl} class="flex items-center gap-2 font-display text-lg font-semibold tracking-tight sm:text-xl">
-      {site.teacherName}
-      <!-- Kształt, nie znak tekstowy: zieleń #0bb50e nie przechodzi kontrastu jako tekst. -->
-      <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-grass" aria-hidden="true"></span>
-    </a>
+    <a href={homeUrl} class="brand sm:text-xl">{site.teacherName}</a>
 
     <nav class="hidden items-center gap-7 md:flex" aria-label="Nawigacja główna">
       {

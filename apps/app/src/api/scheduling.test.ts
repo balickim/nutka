@@ -27,6 +27,6 @@ describe("scheduling endpoints", () => {
 
   it("maps stable API error codes to Polish UI copy without rendering server text", () => {
     expect(getSchedulingErrorMessage(new ApiRequestError({ code: "conflict", message: "The interval conflicts." }, 409))).toContain("termin");
-    expect(getSchedulingErrorMessage(new ApiRequestError({ code: "unknown_code", message: "English server detail" }, 500))).toBe("Nie udało się wykonać operacji.");
+    expect(getSchedulingErrorMessage(new ApiRequestError({ code: "unknown_code", message: "English server detail" }, 500))).toBe("Coś poszło nie tak. Spróbuj ponownie.");
   });
 });

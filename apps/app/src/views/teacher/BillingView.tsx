@@ -49,7 +49,7 @@ export function uniqueCharges(data: UnresolvedWorkResponse) {
 
 function QueueBody({ data, pending, names }: { data?: UnresolvedWorkResponse; pending: boolean; names: ReadonlyMap<string, string> }) {
   if (pending || !data) return <Skeleton lines={4} label="Ładowanie kolejki…" />;
-  if (unresolvedCount(data) === 0) return <EmptyState action={<a className="secondary-button" href="/teachers/students">Otwórz listę uczniów</a>}>Wszystko rozliczone. Nic nie czeka na Twoją decyzję.</EmptyState>;
+  if (unresolvedCount(data) === 0) return <EmptyState action={<a className="btn btn-ghost btn-sm" href="/teachers/students">Otwórz listę uczniów</a>}>Wszystko rozliczone. Nic nie czeka na Twoją decyzję.</EmptyState>;
   return <div className="work-grid">
     {data.awaiting_outcome.length ? <p className="supporting-copy">Wyników oczekuje: {data.awaiting_outcome.length}. Zapisz je na ekranie Dziś.</p> : null}
     {data.pending_settlements.map((item) => <SettlementCard key={item.lesson} item={item} learner={names.get(item.assignment)} />)}
@@ -60,5 +60,5 @@ function QueueBody({ data, pending, names }: { data?: UnresolvedWorkResponse; pe
 function FinancialHistory({ entries, credits }: { entries: FinancialEntry[]; credits: FinancialEntry[] }) {
   const items = Array.from(new Map([...credits, ...entries].map((entry) => [entry.id, entry])).values()).sort((left, right) => right.event_at.localeCompare(left.event_at));
   if (items.length === 0) return null;
-  return <details className="financial-history"><summary>Kredyty, zwroty i historia rozliczeń</summary><ul className="history-list">{items.map((entry) => <li key={entry.id}><strong>{polishFinancialEntry(entry.entry_type)}</strong> · {formatMoney(entry.amount_minor, entry.currency)} · {formatScheduleInstant(entry.event_at)}</li>)}</ul></details>;
+  return <details className="financial-history"><summary>Nadpłaty, zwroty i historia rozliczeń</summary><ul className="history-list">{items.map((entry) => <li key={entry.id}><strong>{polishFinancialEntry(entry.entry_type)}</strong> · {formatMoney(entry.amount_minor, entry.currency)} · {formatScheduleInstant(entry.event_at)}</li>)}</ul></details>;
 }

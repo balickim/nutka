@@ -16,14 +16,13 @@ export function LoginView({ realm = "learner" }: LoginViewProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const login = usePersonaLogin(realm);
   const isTeacher = realm === "teacher";
-  const loginTitle = isTeacher ? "Zaloguj się jako nauczyciel" : "Zaloguj się jako uczeń";
   const fallback = isTeacher ? "/teachers" : "/learners/calendar";
   return (
     <main className="auth-shell">
       <section className="auth-intro">
-        <p className="wordmark">{authCopy.brand}</p>
+        <p className="brand">{authCopy.brand}</p>
         <p className="eyebrow">{isTeacher ? "nutka / nauczyciel" : authCopy.eyebrow}</p>
-        <h1>{loginTitle}</h1>
+        <h1>Zaloguj się jako <span className="marker">{isTeacher ? "nauczyciel" : "uczeń"}</span></h1>
         <p className="intro-copy">{authCopy.loginDescription}</p>
         <div className="music-mark" aria-hidden="true"><span /><span /><span /></div>
       </section>
@@ -56,7 +55,7 @@ export function LoginView({ realm = "learner" }: LoginViewProps) {
               <input id="password" name="password" type="password" autoComplete="current-password" placeholder={authCopy.passwordPlaceholder} value={values.password} onChange={handleChange} onBlur={handleBlur} aria-invalid={Boolean(touched.password && errors.password)} />
               {touched.password && errors.password ? <p className="field-error">{errors.password}</p> : null}
               {submitError ? <p className="form-error" role="alert">{submitError}</p> : null}
-              <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? authCopy.submitting : authCopy.submit}</button>
+              <button className="btn btn-primary" type="submit" disabled={isSubmitting}>{isSubmitting ? authCopy.submitting : authCopy.submit}</button>
             </form>
           )}
         </Formik>

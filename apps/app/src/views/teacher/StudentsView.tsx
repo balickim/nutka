@@ -16,7 +16,7 @@ export function StudentsView() {
 }
 
 function Roster({ rows }: { rows: RosterRow[] }) {
-  if (rows.length === 0) return <section className="panel-section"><h2>Uczniowie</h2><EmptyState action={<Link className="secondary-button" to="/teachers/availability">Ustaw dostępność</Link>}>Nie masz jeszcze uczniów.</EmptyState></section>;
+  if (rows.length === 0) return <section className="panel-section"><h2>Uczniowie</h2><EmptyState action={<Link className="btn btn-ghost btn-sm" to="/teachers/availability">Ustaw dostępność</Link>}>Nie masz jeszcze uczniów.</EmptyState></section>;
   return <section className="panel-section"><h2>Uczniowie</h2><div className="assignment-list">{rows.map((row) => <RosterCard key={row.assignmentId} row={row} />)}</div></section>;
 }
 

@@ -39,7 +39,7 @@ function PurchaseFlow({ assignmentId, adHocLessons, policy, renewal }: { assignm
   const { notify } = useToast();
   const [convert, setConvert] = useState<string[]>([]);
   const title = renewal ? "Odnowienie pakietu" : "Zakup pakietu";
-  const summary = `${title}: ${policy.package_token_count} lekcji za ${formatMoney(policy.package_price_minor, policy.currency)}, ważny ${policy.package_validity_days} dni.${convert.length ? ` Zamieniamy ${convert.length} lekcji ad hoc na lekcje z pakietu.` : ""}`;
+  const summary = `${title}: ${policy.package_token_count} lekcji za ${formatMoney(policy.package_price_minor, policy.currency)}, ważny ${policy.package_validity_days} dni.${convert.length ? ` Zamieniamy ${convert.length} pojedynczych lekcji na lekcje z pakietu.` : ""}`;
   async function confirm() {
     await mutation.mutateAsync({ assignmentId, write: () => purchasePackage(assignmentId, convert.length ? { convert_lesson_ids: convert } : {}) });
     notify(`${title} zapisane.`);

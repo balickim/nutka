@@ -8,6 +8,10 @@ export function formatScheduleInstant(value: string, timezone?: string): string 
   return localizeUtcInstant(value, "pl-PL", { dateStyle: "medium", timeStyle: "short", ...(timezone ? { timeZone: timezone } : {}) });
 }
 
+export function formatScheduleTime(value: string, timezone?: string): string {
+  return localizeUtcInstant(value, "pl-PL", { timeStyle: "short", ...(timezone ? { timeZone: timezone } : {}) });
+}
+
 export function formatScheduleDate(value: string, timezone?: string): string {
   return localizeUtcInstant(value, "pl-PL", { dateStyle: "medium", ...(timezone ? { timeZone: timezone } : {}) });
 }

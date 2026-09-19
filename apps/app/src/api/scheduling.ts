@@ -39,10 +39,11 @@ export function assignmentDisplayName(
   const name =
     role === "teacher" ? assignment.learner_name : assignment.teacher_name;
   if (name?.trim()) return name.trim();
-  const opaqueId = role === "teacher" ? assignment.learner : assignment.teacher;
-  return opaqueId.length > 12
-    ? `${opaqueId.slice(0, 7)}…${opaqueId.slice(-4)}`
-    : opaqueId;
+  return opaqueIdLabel(role === "teacher" ? assignment.learner : assignment.teacher);
+}
+
+export function opaqueIdLabel(id: string): string {
+  return id.length > 12 ? `${id.slice(0, 7)}…${id.slice(-4)}` : id;
 }
 
 export type SlotResponse = {

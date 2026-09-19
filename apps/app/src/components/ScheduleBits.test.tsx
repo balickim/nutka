@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { canManageLesson, hasUpcomingLessons, lessonParticipantName } from "./ScheduleBits";
-import type { Lesson } from "../api/scheduling";
+import type { Assignment, Lesson } from "../api/scheduling";
 
 const lesson = (startAt: string, scheduleState: Lesson["schedule_state"] = "scheduled"): Lesson => ({
   id: "lesson-1", teacher: "teacher-1", learner: "learner-1", assignment: "assignment-1",
@@ -27,7 +27,8 @@ describe("lesson lifecycle controls", () => {
 
   it("maps each lesson to its assigned counterpart and falls back to an opaque ID", () => {
     const named = lesson("2026-01-15T12:15:00Z");
-    expect(lessonParticipantName(named, "teacher", new Map([["learner-1", "Ada"]]))).toBe("Ada");
-    expect(lessonParticipantName(named, "learner")).toBe("teacher-1");
+    const assignment = { id: "assignment-1", teacher: "teacher-1", learner: "learner-1", learner_name: "Ada", teacher_name: "" } as Assignment;
+    expect(lessonParticipantName(named, "teacher", [assignment])).toBe("Ada");
+    expect(lessonParticipantName(named, "learner", [])).toBe("teacher-1");
   });
 });

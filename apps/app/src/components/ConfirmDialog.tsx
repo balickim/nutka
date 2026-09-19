@@ -31,8 +31,8 @@ export function ConfirmDialog({ open, title, consequence, confirmLabel, danger, 
       <p className="supporting-copy">{consequence}</p>
       {children}
       <div className="row-actions">
-        <button className="secondary-button" onClick={onCancel}>Anuluj</button>
-        <button className={`primary-button dialog-confirm ${danger ? "danger-button" : ""}`} disabled={busy || confirmDisabled} aria-busy={busy} onClick={onConfirm}>{confirmLabel}</button>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>Anuluj</button>
+        <button className={`btn btn-primary btn-sm dialog-confirm ${danger ? "danger-button" : ""}`} disabled={busy || confirmDisabled} aria-busy={busy} onClick={onConfirm}>{confirmLabel}</button>
       </div>
     </div>
   </div>;

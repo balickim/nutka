@@ -1,12 +1,13 @@
 // Guards every teacher route with the teacher session and supplies the shared frame, navigation, calendar, and policy.
 
 import { useEffect, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import type { CalendarResponse, Policy } from "../../api/contracts";
 import { authenticatedRecord, personaDisplayName, usePersonaLogout, usePersonaSession } from "../../auth/session";
 import { ApiFeedback } from "../../components/ApiFeedback";
+import { PanelFrame } from "../../components/PanelFrame";
 import { Skeleton } from "../../components/Skeleton";
 import { businessPolicyQuery } from "../../query/commercial";
 import { teacherCalendarQuery } from "../../query/scheduling";
@@ -33,7 +34,7 @@ export function TeacherShell({ lede, children }: { lede: string; children: (cont
   if (session.isError) return <SessionUnavailable onRetry={() => void session.refetch()} />;
   if (!record) return null;
   async function handleLogout() { await logout.mutateAsync(); await router.navigate({ to: "/teachers/login" }); }
-  const frame = (body: ReactNode) => <PanelFrame title={`Cześć, ${personaDisplayName(record)}.`} lede={lede} onLogout={() => void handleLogout()}>{body}</PanelFrame>;
+  const frame = (body: ReactNode) => <PanelFrame eyebrow="Panel nauczyciela" name={personaDisplayName(record)} lede={lede} nav={<TeacherNav />} onLogout={() => void handleLogout()}>{body}</PanelFrame>;
   const failure = [calendar.error, policy.error].find(Boolean);
   if (failure) return frame(<ApiFeedback error={failure} onRetry={() => { void calendar.refetch(); void policy.refetch(); }} />);
   if (!calendar.data || !policy.data) return frame(<Skeleton lines={5} label="Ładowanie panelu…" />);
@@ -41,22 +42,9 @@ export function TeacherShell({ lede, children }: { lede: string; children: (cont
 }
 
 function SessionUnavailable({ onRetry }: { onRetry: () => void }) {
-  return <main className="center-shell"><section className="status-card" role="alert"><h1>Nie możemy teraz sprawdzić sesji.</h1><button className="secondary-button" onClick={onRetry}>Spróbuj ponownie</button></section></main>;
+  return <main className="center-shell"><section className="status-card" role="alert"><h1>Nie możemy teraz sprawdzić sesji.</h1><button className="btn btn-ghost btn-sm" onClick={onRetry}>Spróbuj ponownie</button></section></main>;
 }
 
-function PanelFrame({ title, lede, onLogout, children }: { title: string; lede: string; onLogout: () => void; children: ReactNode }) {
-  const path = useRouterState({ select: (state) => state.location.pathname });
-  return <main className="panel-shell">
-    <header className="panel-header">
-      <div className="panel-identity"><p className="wordmark">nutka</p><h1>{title}</h1></div>
-      <nav className="panel-nav" aria-label="Panel nauczyciela">{screens.map((screen) => <Link key={screen.to} to={screen.to} className={isCurrent(path, screen.to) ? "active" : ""} aria-current={isCurrent(path, screen.to) ? "page" : undefined}>{screen.label}</Link>)}</nav>
-      <button className="text-button" onClick={onLogout}>Wyloguj</button>
-    </header>
-    <p className="panel-lede">{lede}</p>
-    {children}
-  </main>;
-}
-
-function isCurrent(path: string, to: string): boolean {
-  return to === "/teachers" ? path === "/teachers" : path.startsWith(to);
+function TeacherNav() {
+  return <nav className="panel-nav" aria-label="Panel nauczyciela">{screens.map((screen) => <Link key={screen.to} to={screen.to} activeOptions={{ exact: screen.to === "/teachers" }}>{screen.label}</Link>)}</nav>;
 }

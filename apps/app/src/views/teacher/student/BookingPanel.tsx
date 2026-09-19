@@ -18,7 +18,7 @@ export function BookingPanel({ assignmentId, policy }: { assignmentId: string; p
   const [confirmShortNotice, setConfirmShortNotice] = useState(false);
   const shortNotice = start ? Date.parse(localInputToUtc(start)) - Date.now() < policy.learner_booking_minimum_hours * 3_600_000 : false;
   const blocked = shortNotice && !confirmShortNotice;
-  const summary = start && !blocked ? `Lekcja ${formatScheduleInstant(localInputToUtc(start))}, ${policy.lesson_duration_minutes} minut. System dobierze plan rozliczenia.` : null;
+  const summary = start && !blocked ? `Lekcja ${formatScheduleInstant(localInputToUtc(start))}, ${policy.lesson_duration_minutes} minut. Sposób rozliczenia dobierzemy automatycznie.` : null;
   async function confirm() {
     await mutation.mutateAsync({ assignmentId, write: () => bookFlexibleLesson("teacher", assignmentId, { start_at: localInputToUtc(start), ...(confirmShortNotice ? { confirm_short_notice: true } : {}) }) });
     notify(`Zarezerwowano lekcję ${formatScheduleInstant(localInputToUtc(start))}.`);
@@ -26,7 +26,7 @@ export function BookingPanel({ assignmentId, policy }: { assignmentId: string; p
     setConfirmShortNotice(false);
   }
   return <section className="subpanel">
-    <h3>Rezerwacja za ucznia <PolicyHint>{`Termin zaczyna się w ciągu ${policy.booking_horizon_days} dni, na siatce co ${policy.start_grid_minutes} minut. Bufor uczestnika wynosi ${policy.participant_buffer_minutes} minut.`}</PolicyHint></h3>
+    <h3>Rezerwacja za ucznia <PolicyHint>{`Termin musi przypadać w najbliższych ${policy.booking_horizon_days} dniach. Lekcje zaczynają się co ${policy.start_grid_minutes} minut. Przed lekcją i po niej zostaje ${policy.participant_buffer_minutes} minut przerwy.`}</PolicyHint></h3>
     <ApiFeedback error={mutation.error} />
     <FlowPanel title="Rezerwacja lekcji" openLabel="Zarezerwuj termin" confirmLabel="Zarezerwuj" summary={summary} busy={mutation.isPending} onConfirm={confirm}>
       <label htmlFor={`booking-${assignmentId}`}>Termin</label>
