@@ -12,6 +12,7 @@ The [learner content constitution](../constitutions/learner-content.md) defines 
 - Deletion of the assignment deletes its materials and their files.
 - The `body` field is a PocketBase editor field that holds sanitized HTML.
 - The `attachments` field is a protected PocketBase file field.
+- The optional `piece` relation links a material to one piece of the same assignment. The [repertoire API](repertoire.md) defines pieces.
 - The collection has no list, view, create, update, or delete rules.
 - Only superusers can use the native record and file routes of the collection.
 
@@ -22,12 +23,13 @@ The [learner content constitution](../constitutions/learner-content.md) defines 
 | `GET` | `/api/teachers/assignments/{id}/materials` | Assigned teacher | `{ "items": Material[] }` |
 | `GET` | `/api/learners/assignments/{id}/materials` | Assigned learner | `{ "items": Material[] }` |
 | `POST` | `/api/teachers/assignments/{id}/materials` | Assigned teacher | `201` with `Material` |
+| `PATCH` | `/api/teachers/materials/{id}` | Assigned teacher | `Material` |
 | `DELETE` | `/api/teachers/materials/{id}` | Assigned teacher | `204` |
 | `GET` | `/api/teachers/materials/{id}/files/{name}` | Assigned teacher | File stream |
 | `GET` | `/api/learners/materials/{id}/files/{name}` | Assigned learner | File stream |
 
 - Each route resolves identity from the session cookie of its realm.
-- The `POST` and `DELETE` routes require the `X-Requested-With: fetch` header.
+- The `POST`, `PATCH`, and `DELETE` routes require the `X-Requested-With: fetch` header.
 - The list returns materials in reverse order of creation.
 - An unrelated account receives `403 unauthorized` without material existence.
 - A file name that the material does not hold returns `404 not_found`.
@@ -41,11 +43,23 @@ The `POST` route accepts `multipart/form-data` with these fields:
 | `title` | Required. The server trims it. Maximum 200 characters. |
 | `body` | Optional HTML. The server sanitizes it before storage. Maximum 200 KB. |
 | `attachments` | Optional. Zero to 10 files. Each file is at most 10 MB. |
+| `piece` | Optional. The identifier of a piece of the same assignment. |
 
 - A material requires a title and a non-empty body or at least one attachment.
 - Attachments accept `image/jpeg`, `image/png`, `image/webp`, `image/gif`, and `application/pdf`.
+- A piece of another assignment returns `400 invalid_material`.
 - A rule violation returns `400 invalid_material`.
 - A request body above the route limit returns `413`.
+
+## Piece link
+
+```json
+{ "piece": "piece-id" }
+```
+
+- The `PATCH` route changes only the `piece` link of the material.
+- A `null` or empty `piece` removes the link.
+- A piece of another assignment returns `400 invalid_material`.
 
 ## Body sanitization
 
@@ -64,6 +78,7 @@ The `POST` route accepts `multipart/form-data` with these fields:
   "assignment": "assignment-id",
   "title": "Gama C-dur",
   "body": "<p>Ćwicz <strong>codziennie</strong>.</p>",
+  "piece": null,
   "attachments": [
     { "name": "nuty_a1b2c3d4e5.pdf", "kind": "pdf", "url": "/api/learners/materials/material-id/files/nuty_a1b2c3d4e5.pdf" }
   ],
@@ -71,6 +86,7 @@ The `POST` route accepts `multipart/form-data` with these fields:
 }
 ```
 
+- `piece` is the identifier of the linked piece, or `null`.
 - `kind` is `image` or `pdf`.
 - `url` is a path in the realm of the caller. Clients prefix it with the configured API base URL.
 - `created_at` is a UTC instant.

@@ -1,23 +1,42 @@
-// Shows the teacher materials of the selected assignment. It is the only learner screen that loads materials.
+// Shows the repertoire of the selected assignment: pieces by status with their arrangement versions, learner wishes, and other materials.
 
 import { useQuery } from "@tanstack/react-query";
 
-import { learnerMaterialsHelp } from "../../api/copy";
+import { learnerPiecesHelp, pieceStatusCopy } from "../../api/copy";
 import { ApiFeedback } from "../../components/api-feedback";
+import { EmptyState } from "../../components/empty-state";
 import { HelpHeading } from "../../components/help-heading";
 import { MaterialList } from "../../components/material-list";
 import { Skeleton } from "../../components/skeleton";
 import { materialsQuery } from "../../query/materials";
+import { piecesQuery } from "../../query/pieces";
 import { LearnerShell } from "./learner-shell";
+import { PieceCard } from "./pieces/piece-card";
+import { groupRepertoire } from "./pieces/repertoire";
+import { WishSection } from "./pieces/wish-section";
 
 export function PiecesView() {
-  return <LearnerShell lede="Materiały, które przygotował dla Ciebie nauczyciel.">{(context) => <Materials accountId={context.accountId} assignmentId={context.assignment.id} />}</LearnerShell>;
+  return <LearnerShell lede="Utwory, których się uczysz, i materiały od nauczyciela.">{(context) => <Repertoire accountId={context.accountId} assignmentId={context.assignment.id} />}</LearnerShell>;
 }
 
-function Materials({ accountId, assignmentId }: { accountId: string; assignmentId: string }) {
+function Repertoire({ accountId, assignmentId }: { accountId: string; assignmentId: string }) {
+  const pieces = useQuery(piecesQuery("learner", accountId, assignmentId));
   const materials = useQuery(materialsQuery("learner", accountId, assignmentId));
-  return <section className="panel-section learner-materials"><HelpHeading title="Materiały od nauczyciela" help={learnerMaterialsHelp} />
-    {materials.error ? <ApiFeedback error={materials.error} onRetry={() => void materials.refetch()} /> : null}
-    {materials.isPending ? <Skeleton lines={3} label="Ładowanie materiałów…" /> : <MaterialList items={materials.data?.items ?? []} empty="Nauczyciel nie dodał jeszcze materiałów." />}
-  </section>;
+  const failure = pieces.error ?? materials.error;
+  if (failure) return <section className="panel-section"><ApiFeedback error={failure} onRetry={() => { void pieces.refetch(); void materials.refetch(); }} /></section>;
+  if (!pieces.data || !materials.data) return <section className="panel-section"><Skeleton lines={4} label="Ładowanie utworów…" /></section>;
+  const { wishes, groups, versions, loose } = groupRepertoire(pieces.data.items, materials.data.items);
+  const filled = groups.filter((group) => group.pieces.length > 0);
+  return <>
+    <section className="panel-section repertoire">
+      <HelpHeading title="Moje utwory" help={learnerPiecesHelp} />
+      {filled.length === 0 ? <EmptyState>Nauczyciel nie dodał jeszcze utworów. Napisz poniżej, co chcesz zagrać.</EmptyState> : null}
+      {filled.map((group) => <div className="piece-group" key={group.status}>
+        <h3>{pieceStatusCopy.learner[group.status]}</h3>
+        <div className="piece-list">{group.pieces.map((piece) => <PieceCard key={piece.id} piece={piece} versions={versions.get(piece.id) ?? []} />)}</div>
+      </div>)}
+    </section>
+    <WishSection assignmentId={assignmentId} wishes={wishes} />
+    {loose.length ? <section className="panel-section learner-materials"><h2>Inne materiały</h2><MaterialList items={loose} empty="" /></section> : null}
+  </>;
 }

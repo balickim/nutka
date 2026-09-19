@@ -123,6 +123,9 @@ export const errorCopy: Record<string, string> = {
   invalid_lesson_note: "Notatka potrzebuje treści. Możesz dołączyć najwyżej 10 materiałów tego ucznia.",
   lesson_not_started: "Notatkę można dodać dopiero po rozpoczęciu lekcji.",
   lesson_cancelled: "Do odwołanej lekcji nie można dodać notatki.",
+  invalid_piece: "Utwór potrzebuje tytułu. Tytuł i wykonawca mogą mieć najwyżej 200 znaków.",
+  piece_locked: "Możesz usunąć tylko własne życzenie, zanim nauczyciel zacznie z Tobą ten utwór.",
+  assignment_inactive: "Zajęcia z tym nauczycielem są zakończone. Możesz tylko przeglądać zapisane treści.",
   invalid_payment_details: "Sprawdź numer konta. Podaj polski numer konta z 26 cyframi i nazwę odbiorcy.",
   invalid_duration: "Lekcja musi mieć czas trwania określony przez bieżące zasady.",
   invalid_grid: "Wybierz inną godzinę rozpoczęcia.",
@@ -209,6 +212,13 @@ export function availabilityHelpCopy(policy: Policy) {
 }
 
 // Explains the learner panel sections in everyday words. Texts restate docs/constitutions/scheduling.md and docs/api/materials.md.
+export const pieceStatusCopy = {
+  learner: { wish: "Chcę zagrać", learning: "Uczę się", playing: "Gram", repertoire: "W repertuarze" },
+  teacher: { wish: "Życzenie ucznia", learning: "W nauce", playing: "Gra", repertoire: "W repertuarze" },
+} as const;
+
+export const learnerPiecesHelp = "Utwory prowadzi Twój nauczyciel. Przy każdym utworze są jego opracowania, od najnowszego. Utwór, który chcesz zagrać, dopisz w sekcji „Chcę zagrać”.";
+
 export const learnerMaterialsHelp = "Materiały dodaje Twój nauczyciel: tekst, zdjęcia i pliki PDF. Najnowsze są na górze. Widzisz tylko materiały od wybranego nauczyciela.";
 
 export function learnerHelpCopy(policy: Policy) {
@@ -220,10 +230,13 @@ export function learnerHelpCopy(policy: Policy) {
 }
 
 // Polish nouns take one of three forms after a number: 1 lekcja, 2–4 lekcje, 5 lekcji, but 22 lekcje and 12 lekcji.
-export function lessonCount(count: number): string {
+function polishCount(count: number, [one, few, many]: [string, string, string]): string {
   const tens = count % 100;
   const ones = count % 10;
-  if (count === 1) return "1 lekcja";
-  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return `${count} lekcje`;
-  return `${count} lekcji`;
+  if (count === 1) return `1 ${one}`;
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return `${count} ${few}`;
+  return `${count} ${many}`;
 }
+
+export const lessonCount = (count: number) => polishCount(count, ["lekcja", "lekcje", "lekcji"]);
+export const arrangementCount = (count: number) => polishCount(count, ["opracowanie", "opracowania", "opracowań"]);

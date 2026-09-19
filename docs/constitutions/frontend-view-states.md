@@ -44,7 +44,12 @@ It does not change any backend contract in `docs/api/`.
 - `LearnerShell` loads the learner session, business policy, and learner calendar once for every learner screen.
 - The learner home is `/learners`. The Start screen shows the next lesson and links to other screens.
 - `/learners/lessons` holds lessons, booking, plan summary, notice, history, and package lesson details.
-- `/learners/pieces` holds the teacher materials. No other learner screen reads the materials list.
+- `/learners/pieces` holds the pieces and the teacher materials. No other learner screen reads the pieces or materials lists.
+- The learner pieces screen groups pieces under "Uczę się", "Gram", and "W repertuarze" and hides an empty group.
+- Each piece lists its arrangement versions, newest first, with the label "Wersja N" by creation order.
+- The "Chcę zagrać" section lists the wishes and holds the wish form. Materials without a piece show under "Inne materiały".
+- The teacher learner view has an Utwory tab with the learner wishes first. "Zacznij naukę" changes a wish to `learning`.
+- The teacher materials tab offers a piece choice on create and on each material.
 - `/learners/calendar` redirects to `/learners/lessons` and replaces the history entry.
 - The `a` search parameter selects the assignment. A missing or unknown value selects the first active assignment.
 - The assignment switcher appears only when the learner has two or more active assignments.

@@ -2,7 +2,7 @@
 
 This document defines the rules that every assignment-scoped learner content type follows.
 Learner content is teaching content that a teacher and a learner share inside one assignment.
-The [learner materials API](../api/materials.md) and the [lesson notes API](../api/lesson-notes.md) define the current learner content types.
+The [learner materials API](../api/materials.md), the [lesson notes API](../api/lesson-notes.md), and the [repertoire API](../api/repertoire.md) define the current learner content types.
 
 ## Scope
 
@@ -28,6 +28,7 @@ The [learner materials API](../api/materials.md) and the [lesson notes API](../a
 - An unrelated account receives `403 unauthorized` and learns nothing about the existence of the record.
 - A write route requires the `X-Requested-With: fetch` header.
 - A request field never replaces the caller identity or the author role.
+- A learner write on an inactive assignment returns `409 assignment_inactive`. The learner can still read the content.
 
 ## History
 

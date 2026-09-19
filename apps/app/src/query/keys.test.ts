@@ -96,6 +96,17 @@ describe("mutation cache rules", () => {
     expect(staleKeys()).toEqual([teacherMaterials, learnerMaterials].map((key) => JSON.stringify(key)).sort());
   });
 
+  it("refreshes materials and pieces of only the changed assignment after a material or piece write", async () => {
+    const changed = [queryKeys.materials("teacher", "teacher-1", "assignment-1"), queryKeys.materials("learner", "learner-1", "assignment-1"), queryKeys.pieces("teacher", "teacher-1", "assignment-1"), queryKeys.pieces("learner", "learner-1", "assignment-1")];
+    const other = queryKeys.pieces("learner", "learner-1", "assignment-2");
+    for (const rule of [queryRules.materialWrite("assignment-1"), queryRules.pieceWrite("assignment-1")]) {
+      client = createAppQueryClient();
+      [...changed, other].forEach((key) => client.setQueryData(key, { seeded: true }));
+      await applyCacheEffect(client, rule);
+      expect(staleKeys()).toEqual(changed.map((key) => JSON.stringify(key)).sort());
+    }
+  });
+
   it("refreshes teacher and learner notes of only the changed assignment after a note write", async () => {
     const teacherNotes = queryKeys.lessonNotes("teacher", "teacher-1", "assignment-1");
     const learnerNotes = queryKeys.lessonNotes("learner", "learner-1", "assignment-1");

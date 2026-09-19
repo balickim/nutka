@@ -1,5 +1,5 @@
 // Package personaroute resolves the persona caller, mutation intent, and assignment ownership for custom persona routes.
-// It owns the shared 401 and 403 bodies. Feature packages keep their own domain errors.
+// It owns the shared 401, 403, and inactive assignment 409 bodies. Feature packages keep their own domain errors.
 package personaroute
 
 import (
@@ -24,6 +24,7 @@ var (
 	ErrUnauthenticated = errors.New("persona authentication is required")
 	ErrForbidden       = errors.New("persona account is not allowed")
 	ErrIntent          = errors.New("persona mutation intent is missing")
+	ErrInactive        = errors.New("assignment is inactive")
 )
 
 // Caller checks the realm cookie and the resolved auth record together so request fields cannot alter identity.
@@ -62,6 +63,14 @@ func OwnedAssignment(app core.App, id string, who Role, accountID string) (*core
 	return row, nil
 }
 
+// RequireActive keeps an inactive assignment read-only for learner writes.
+func RequireActive(assignment *core.Record) error {
+	if !assignment.GetBool(schedulingstore.ActiveField) {
+		return ErrInactive
+	}
+	return nil
+}
+
 // WriteError writes the shared body for a persona error and reports whether it handled err.
 func WriteError(e *core.RequestEvent, err error) (bool, error) {
 	switch {
@@ -71,6 +80,8 @@ func WriteError(e *core.RequestEvent, err error) (bool, error) {
 		return true, e.JSON(http.StatusForbidden, map[string]string{"code": "unauthorized", "message": "The account is not allowed to access this resource."})
 	case errors.Is(err, ErrIntent):
 		return true, e.JSON(http.StatusForbidden, map[string]string{"code": "missing_intent", "message": "The mutation intent header is required."})
+	case errors.Is(err, ErrInactive):
+		return true, e.JSON(http.StatusConflict, map[string]string{"code": "assignment_inactive", "message": "The assignment is inactive."})
 	default:
 		return false, nil
 	}

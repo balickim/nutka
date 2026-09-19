@@ -32,7 +32,7 @@ func newFixture(t *testing.T) fixture {
 	teachers := save(t, app, core.NewAuthCollection(authconfig.TeachersCollectionName))
 	learners := save(t, app, core.NewAuthCollection(authconfig.LearnersCollectionName))
 	assignments := core.NewBaseCollection(schedulingstore.TeacherLearnersCollectionName)
-	assignments.Fields.Add(&core.TextField{Name: string(Teacher)}, &core.TextField{Name: string(Learner)})
+	assignments.Fields.Add(&core.TextField{Name: string(Teacher)}, &core.TextField{Name: string(Learner)}, &core.BoolField{Name: schedulingstore.ActiveField})
 	save(t, app, assignments)
 	f := fixture{app: app, teacher: account(t, app, teachers, "teacher@example.test", true), learner: account(t, app, learners, "learner@example.test", true), pending: account(t, app, learners, "pending@example.test", false)}
 	row := core.NewRecord(assignments)
@@ -125,5 +125,20 @@ func TestRequireIntent(t *testing.T) {
 	e.Request.Header.Set(authconfig.AuthIntentHeader, authconfig.AuthIntentValue)
 	if err := RequireIntent(e); err != nil {
 		t.Fatalf("intent was rejected: %v", err)
+	}
+}
+
+func TestRequireActive(t *testing.T) {
+	f := newFixture(t)
+	row, err := f.app.FindRecordById(schedulingstore.TeacherLearnersCollectionName, f.assigned)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RequireActive(row); !errors.Is(err, ErrInactive) {
+		t.Fatalf("inactive assignment was accepted: %v", err)
+	}
+	row.Set(schedulingstore.ActiveField, true)
+	if err := RequireActive(row); err != nil {
+		t.Fatalf("active assignment was rejected: %v", err)
 	}
 }

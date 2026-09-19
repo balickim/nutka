@@ -1,16 +1,20 @@
-// Shows learner materials newest first: sanitized rich text, inline images, and PDF links. The teacher view adds a delete control.
+// Shows learner materials newest first: sanitized rich text, inline images, and PDF links. Callers add a caption line and controls per material.
+
+import type { ReactNode } from "react";
 
 import type { Material, MaterialAttachment } from "../api/materials";
 import { apiUrl } from "../api/url";
 import { formatScheduleDate } from "../time/schedule";
 import { EmptyState } from "./empty-state";
 
-export function MaterialList({ items, empty, onDelete }: { items: Material[]; empty: string; onDelete?: (material: Material) => void }) {
+type ListProps = { items: Material[]; empty: string; caption?: (material: Material) => string | null; actions?: (material: Material) => ReactNode };
+
+export function MaterialList({ items, empty, caption, actions }: ListProps) {
   if (items.length === 0) return <EmptyState>{empty}</EmptyState>;
   return <div className="material-list">{items.map((material) => <article className="material-card" key={material.id}>
     <div className="material-heading">
-      <div><h3>{material.title}</h3><p className="lesson-meta">Dodano {formatScheduleDate(material.created_at)}</p></div>
-      {onDelete ? <button className="text-button danger-button" onClick={() => onDelete(material)}>Usuń</button> : null}
+      <div>{caption?.(material) ? <p className="eyebrow">{caption(material)}</p> : null}<h3>{material.title}</h3><p className="lesson-meta">Dodano {formatScheduleDate(material.created_at)}</p></div>
+      {actions ? <div className="row-actions">{actions(material)}</div> : null}
     </div>
     {/* The backend stores only sanitized HTML, so rendering it cannot run scripts. */}
     {material.body ? <div className="material-body" dangerouslySetInnerHTML={{ __html: material.body }} /> : null}
