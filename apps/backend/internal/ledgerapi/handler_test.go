@@ -41,6 +41,10 @@ func (f *fakeService) ContractMonths(_ context.Context, actor ledger.Actor, _ st
 	f.readActor = actor
 	return ContractMonthPage{}, f.err
 }
+func (f *fakeService) PaymentDue(_ context.Context, actor ledger.Actor, _ string) (PaymentDue, error) {
+	f.readActor = actor
+	return PaymentDue{}, f.err
+}
 func (f *fakeService) UnresolvedWork(context.Context, ledger.Actor) (UnresolvedWork, error) {
 	return UnresolvedWork{}, f.err
 }

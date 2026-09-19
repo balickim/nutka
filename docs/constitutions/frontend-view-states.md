@@ -51,6 +51,11 @@ It does not change any backend contract in `docs/api/`.
 - Each learner screen shows data for the selected assignment only.
 - A learner screen shows a date-only value as a long Polish date and never as `YYYY-MM-DD`.
 - The plan summary shows a payment line only for a value that is not zero.
+- `/learners/payments` shows the payment-due read of the selected assignment. No learner screen blocks an action because of an open payment.
+- The Start screen shows the payment card only when the total due is above zero.
+- The payments screen shows a ZBP transfer QR code only when transfer details exist and the total fits six digits in grosze.
+- The transfer title names the learner and the open months or lesson dates and holds at most 32 characters.
+- `/teachers/settings` holds the teacher transfer details form.
 - The `.learner-panel` class raises the type scale and sets a 44-pixel minimum touch target.
 - Below a 720-pixel viewport, the learner navigation is a fixed bar at the bottom of the screen.
 

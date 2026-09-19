@@ -1,6 +1,7 @@
 // Shows the plan of one assignment: summary, contract notice, flexible booking, history, and package token details.
 
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { contractStatusCopy, planCopy, polishEvent, polishTokenState } from "../../../api/copy";
@@ -32,6 +33,7 @@ export function PlanCard({ accountId, assignment, slots, policy }: { accountId: 
   return <article className="assignment-card">
     <ApiFeedback error={summary.error || history.error || plan.error} />
     <PlanSummary details={summary.data} pending={summary.isPending} onNotice={() => setNoticeOpen(true)} />
+    <Link className="text-button" to="/learners/payments" search={{ a: assignment.id }}>Płatności i dane do przelewu</Link>
     <ConfirmDialog open={noticeOpen} title="Wypowiedzenie umowy" consequence={contract ? `Umowa zakończy się ${formatLocalDate(contract.end_on)}. Lekcje po tej dacie znikną z kalendarza.` : ""} confirmLabel="Złóż wypowiedzenie" danger busy={plan.isPending} onConfirm={() => void notice()} onCancel={() => setNoticeOpen(false)} />
     {summary.data?.active_plan === "regular_contract" ? <p className="supporting-copy">Stałe terminy wynikają z umowy. Elastyczna rezerwacja jest wyłączona.</p> : <LearnerBooking assignment={assignment} slots={slots} policy={policy} />}
     <LearnerHistory items={history.data?.items ?? []} />

@@ -49,6 +49,7 @@ describe("query key registry", () => {
     const summary = queryKeys.commercialSummary("teacher", "teacher-1", "assignment-1");
     expect(queryKeys.assignmentPackages("teacher", "teacher-1", "assignment-1")).toEqual([...summary, "packages"]);
     expect(queryKeys.assignmentContracts("teacher", "teacher-1", "assignment-1")).toEqual([...summary, "contracts"]);
+    expect(queryKeys.paymentDue("learner-1", "assignment-1")).toEqual([...queryKeys.commercialSummary("learner", "learner-1", "assignment-1"), "payment-due"]);
     expect(queryKeys.contractMonths("teacher", "assignment-1", "contract-1")).toEqual([...queryKeys.contractSeries("teacher", "assignment-1", "contract-1"), "months"]);
   });
 });
@@ -69,6 +70,15 @@ describe("mutation cache rules", () => {
     await applyCacheEffect(client, queryRules.planWrite("assignment-1"));
     expect(staleKeys()).toContain(JSON.stringify(packages));
     expect(staleKeys()).toContain(JSON.stringify(contracts));
+    expect(staleKeys()).not.toContain(JSON.stringify(other));
+  });
+
+  it("refreshes the payment-due read of only the booked assignment after a booking", async () => {
+    const due = queryKeys.paymentDue("learner-1", "assignment-1");
+    const other = queryKeys.paymentDue("learner-1", "assignment-2");
+    [due, other].forEach((key) => client.setQueryData(key, { seeded: true }));
+    await applyCacheEffect(client, queryRules.bookingWrite("assignment-1"));
+    expect(staleKeys()).toContain(JSON.stringify(due));
     expect(staleKeys()).not.toContain(JSON.stringify(other));
   });
 

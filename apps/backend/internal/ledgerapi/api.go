@@ -19,6 +19,7 @@ type Service interface {
 	FinancialSummary(context.Context, ledger.Actor) (FinancialSummary, error)
 	FinancialHistory(context.Context, ledger.Actor, string, int, int) (FinancialHistoryPage, error)
 	ContractMonths(context.Context, ledger.Actor, string, int, int) (ContractMonthPage, error)
+	PaymentDue(context.Context, ledger.Actor, string) (PaymentDue, error)
 	UnresolvedWork(context.Context, ledger.Actor) (UnresolvedWork, error)
 	SettleAdHoc(context.Context, ledger.Actor, string, ledger.SettlementState) (LessonPayment, error)
 	PayCharge(context.Context, ledger.Actor, string, ledger.SettlementState) (ChargeView, error)
@@ -52,6 +53,9 @@ func RegisterRoutesWithClock(app *pocketbase.PocketBase, service Service, clock 
 		})
 		r.GET("/api/learners/assignments/{id}/financial-history", func(event *core.RequestEvent) error {
 			return serveFinancialHistory(event, service, ledger.LearnerActor)
+		})
+		r.GET("/api/learners/assignments/{id}/payment-due", func(event *core.RequestEvent) error {
+			return servePaymentDue(event, service)
 		})
 		r.GET("/api/teachers/contracts/{id}/months", func(event *core.RequestEvent) error {
 			return serveContractMonths(event, service, ledger.TeacherActor)
