@@ -73,6 +73,16 @@ export const queryKeys = {
   piecesRoot: (role: PersonaRole) => [root, role, "pieces"] as const,
   pieces: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "pieces", accountId, assignmentId] as const,
+  practiceRoot: (role: PersonaRole) => [root, role, "practice"] as const,
+  practiceTasks: (role: PersonaRole, accountId: string, assignmentId: string, status: string) =>
+    [root, role, "practice", accountId, assignmentId, "tasks", status] as const,
+  practiceSessions: (role: PersonaRole, accountId: string, assignmentId: string, page: number) =>
+    [root, role, "practice", accountId, assignmentId, "sessions", page] as const,
+  practiceSummary: (role: PersonaRole, accountId: string, assignmentId: string) =>
+    [root, role, "practice", accountId, assignmentId, "summary"] as const,
+  practiceDaysRoot: () => [root, "teacher", "practice-day"] as const,
+  practiceDay: (accountId: string, date: string) =>
+    [root, "teacher", "practice-day", accountId, date] as const,
   lessonNotesRoot: (role: PersonaRole) => [root, role, "lesson-notes"] as const,
   lessonNotes: (role: PersonaRole, accountId: string, assignmentId: string) =>
     [root, role, "lesson-notes", accountId, assignmentId] as const,
@@ -127,6 +137,11 @@ const assignmentMaterials = (assignmentId: string): QueryFilters[] =>
 const assignmentPieces = (assignmentId: string): QueryFilters[] =>
   personas.map((role) => ({
     queryKey: queryKeys.piecesRoot(role),
+    predicate: (query) => query.queryKey[4] === assignmentId,
+  }));
+const assignmentPractice = (assignmentId: string): QueryFilters[] =>
+  personas.map((role) => ({
+    queryKey: queryKeys.practiceRoot(role),
     predicate: (query) => query.queryKey[4] === assignmentId,
   }));
 
@@ -216,6 +231,14 @@ export const queryRules = {
         queryKey: queryKeys.lessonNotesRoot(role),
         predicate: (query) => query.queryKey[4] === assignmentId,
       })),
+    }),
+  // A task or session write changes the tasks, sessions, and summaries of one assignment and any teacher day summary.
+  practiceWrite: (assignmentId: string): CacheEffect =>
+    effect({
+      invalidate: [
+        ...assignmentPractice(assignmentId),
+        { queryKey: queryKeys.practiceDaysRoot() },
+      ],
     }),
   // Transfer details change only the teacher's own details read. Learners read them in their own session.
   paymentDetailsWrite: (accountId: string): CacheEffect =>

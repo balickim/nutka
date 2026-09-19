@@ -1,4 +1,4 @@
-// Presents one learner's commercial workspace, lesson notes, pieces, and materials, loading that learner's data only and refusing a foreign assignment.
+// Presents one learner's commercial workspace, lesson notes, practice, pieces, and materials, loading that learner's data only and refusing a foreign assignment.
 
 import { useState } from "react";
 import { useParams } from "@tanstack/react-router";
@@ -12,12 +12,14 @@ import { NotesTab } from "./student/notes-tab";
 import { OverviewTab } from "./student/overview-tab";
 import { PiecesTab } from "./student/pieces-tab";
 import { PlanTab } from "./student/plan-tab";
+import { PracticeTab } from "./student/practice-tab";
 import { TeacherShell } from "./teacher-shell";
 
 const tabs = [
   { id: "overview", label: "Przegląd" },
   { id: "plan", label: "Plan" },
   { id: "notes", label: "Notatki" },
+  { id: "practice", label: "Ćwiczenia" },
   { id: "pieces", label: "Utwory" },
   { id: "materials", label: "Materiały" },
   { id: "history", label: "Historia" },
@@ -27,7 +29,7 @@ type TabId = (typeof tabs)[number]["id"];
 
 export function StudentView() {
   const { assignmentId } = useParams({ from: "/teachers/students/$assignmentId" });
-  return <TeacherShell lede="Stan planu, rozliczeń, utworów, materiałów i historii jednego ucznia.">
+  return <TeacherShell lede="Plan, rozliczenia, ćwiczenia, utwory, materiały i historia jednego ucznia.">
     {(context) => {
       const assignment = context.calendar.assignments.find((item) => item.id === assignmentId);
       if (!assignment) return <NotYours />;
@@ -59,6 +61,7 @@ function Student({ accountId, assignment, policy, adHocLessons, pastLessons }: {
     {tab === "overview" ? <OverviewTab accountId={accountId} assignment={assignment} /> : null}
     {tab === "plan" ? <PlanTab accountId={accountId} assignment={assignment} policy={policy} adHocLessons={adHocLessons} /> : null}
     {tab === "notes" ? <NotesTab accountId={accountId} assignmentId={assignment.id} pastLessons={pastLessons} /> : null}
+    {tab === "practice" ? <PracticeTab accountId={accountId} assignmentId={assignment.id} /> : null}
     {tab === "pieces" ? <PiecesTab accountId={accountId} assignmentId={assignment.id} /> : null}
     {tab === "materials" ? <MaterialsTab accountId={accountId} assignmentId={assignment.id} /> : null}
     {tab === "history" ? <HistoryTab accountId={accountId} assignmentId={assignment.id} /> : null}

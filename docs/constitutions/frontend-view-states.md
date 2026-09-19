@@ -50,6 +50,13 @@ It does not change any backend contract in `docs/api/`.
 - The "Chcę zagrać" section lists the wishes and holds the wish form. Materials without a piece show under "Inne materiały".
 - The teacher learner view has an Utwory tab with the learner wishes first. "Zacznij naukę" changes a wish to `learning`.
 - The teacher materials tab offers a piece choice on create and on each material.
+- `/learners/practice` holds the active tasks, the session form, the practice days of the last 4 weeks, and the recorded sessions.
+- The Start screen shows the active tasks and the session button when the assignment has tasks or sessions.
+- The session form offers today, yesterday, and dates back to 14 days. It preselects every active task.
+- Practice copy states days and minutes only and uses no grammatical gender for the learner.
+- The teacher after-lesson flow offers "Zadania na tydzień" next to the note. One save writes the whole plan.
+- The Today card shows the practice summary since the previous lesson and at most 3 learner comments. It reads all summaries of the day in one request.
+- The teacher learner view has a Ćwiczenia tab with the summary, the active tasks, the plan editor, and the recorded sessions.
 - `/learners/calendar` redirects to `/learners/lessons` and replaces the history entry.
 - The `a` search parameter selects the assignment. A missing or unknown value selects the first active assignment.
 - The assignment switcher appears only when the learner has two or more active assignments.

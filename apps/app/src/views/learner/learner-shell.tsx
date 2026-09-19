@@ -22,6 +22,7 @@ export type LearnerContext = { accountId: string; calendar: CalendarResponse; po
 const screens = [
   { to: "/learners", label: "Start" },
   { to: "/learners/lessons", label: "Lekcje" },
+  { to: "/learners/practice", label: "Ćwiczenia" },
   { to: "/learners/pieces", label: "Utwory" },
 ] as const;
 

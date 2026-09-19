@@ -332,3 +332,31 @@ a.assignment-row:hover { border-color: var(--color-ink); box-shadow: var(--shado
 .piece-row select, .material-heading select { width: auto; }
 .piece-rows { margin-bottom: var(--space-2); }
 .pieces-heading { font-size: var(--text-lg); margin: var(--space-2) 0 var(--space-3); }
+
+.task-list { display: grid; gap: var(--space-3); list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+.task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--space-1); padding: var(--space-4) var(--space-5); }
+.task-card h3 { font-size: var(--text-lg); margin: 0; }
+.task-details { margin: 0; white-space: pre-line; }
+.task-card .lesson-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-1) 0 0; }
+.task-titles { display: grid; gap: var(--space-1); margin: 0 0 var(--space-3); padding-left: var(--space-5); }
+.practice-button { justify-self: start; }
+.session-form, .plan-form { margin-top: var(--space-3); }
+.session-form textarea, .plan-form textarea { font: inherit; }
+.practice-grid { display: grid; gap: var(--space-1); margin: var(--space-3) 0 var(--space-5); max-width: 22rem; }
+.practice-week { display: grid; gap: var(--space-1); grid-template-columns: repeat(7, 1fr); text-align: center; }
+.practice-week [role="columnheader"] { color: var(--text-muted); font-size: var(--text-2xs); font-weight: 600; }
+.practice-day { aspect-ratio: 1; align-items: center; border-radius: var(--radius-pill); color: var(--text-muted); display: flex; font-size: var(--text-xs); justify-content: center; }
+.practice-day.practiced { background: var(--color-grass); color: var(--color-ink); font-weight: 700; }
+.practice-day.today { box-shadow: inset 0 0 0 2px var(--color-ink); }
+.practice-day.future { opacity: .35; }
+.session-list { display: grid; list-style: none; margin: 0; padding: 0; }
+.session-list li { align-items: flex-start; border-bottom: 1px solid var(--border-soft); display: flex; gap: var(--space-3); justify-content: space-between; padding: var(--space-3) 0; }
+.session-list .lesson-meta, .session-comment { margin: var(--space-1) 0 0; }
+.session-comment { font-style: italic; }
+.practice-summary { background: var(--surface-sunken); border-radius: var(--radius-md); margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4); }
+.practice-summary p { margin: 0; }
+.session-comments { display: grid; gap: var(--space-1); list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.plan-task { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; }
+.plan-task select { width: auto; }
+.new-task { display: grid; gap: var(--space-1); }
+.plan-form > .btn-ghost { justify-self: start; }
